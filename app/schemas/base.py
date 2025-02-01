@@ -29,3 +29,9 @@ class MyBaseModelUUID(BaseModel):
 class SexEnum(str, Enum):
     m = 'm'
     f = 'f'
+
+
+class ClientRoleEnum(str, Enum):
+    superclient = 'superclient'
+    staff = 'staff'
+    default = 'default'

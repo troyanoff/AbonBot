@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     access_token_ttl: int = 3600
     refresh_token_ttl: int = 864000
 
+    default_lang: str = 'ru'
+
 
 
 settings = Settings()

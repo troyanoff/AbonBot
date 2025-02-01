@@ -9,6 +9,7 @@ class ClientCreateSchema(MyBaseModel):
     tg_id: int
     first_name: str = Field(max_length=50)
     last_name: str = Field(max_length=50)
-    photo: str = Field(max_length=300, default=None)
+    photo_id: str = Field(max_length=100, default=None)
+    photo_unique_id: str = Field(max_length=20, default=None)
     sex: SexEnum
 

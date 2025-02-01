@@ -15,10 +15,23 @@ from aiogram.types import (
 from redis.asyncio import Redis
 
 from core.config import settings
+
+from routers.auxiliaries import deadlock
+from routers.clients import create_client
+from routers.auxiliaries import start_bot
+
 from db import redis
+
+from middlewares.i18n import TranslatorMiddleware
+from middlewares.start import ClientCheckMiddleware
+
+from phrases.general import translations
 
 
 logger = logging.getLogger(__name__)
+
+async def on_startup(dp):
+    print("Бот запущен!")
 
 
 async def main():
@@ -30,34 +43,46 @@ async def main():
 
     # Выводим в консоль информацию о начале запуска бота
     logger.info('Starting bot')
+    logger.info(f'CONFIG {settings}')
 
     redis_init = Redis(host=settings.redis_host, port=settings.redis_port)
+
+    async for key in redis_init.scan_iter("fsm:*"):
+        print(key)
+        await redis_init.delete(key)
 
     redis.redis = redis_init
     storage = RedisStorage(redis=redis_init)
 
     bot = Bot(
         token=settings.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
+
     dp = Dispatcher(storage=storage)
 
     # dp.workflow_data.update(...)
 
-    # Настраиваем главное меню бота
-    # await set_main_menu(bot)
-
     # Регистриуем роутеры
     logger.info('Подключаем роутеры')
-    # ...
+    dp.include_router(start_bot.router)
+    dp.include_router(create_client.router)
+    dp.include_router(deadlock.router)
 
     # Регистрируем миддлвари
     logger.info('Подключаем миддлвари')
-    # ...
+    dp.update.middleware(TranslatorMiddleware())
+    start_bot.router.message.middleware(ClientCheckMiddleware())
 
     # Пропускаем накопившиеся апдейты и запускаем polling
-    # await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    await bot.delete_webhook(drop_pending_updates=True)
+
+    try:
+        await dp.start_polling(
+            bot, _translations=translations)
+    finally:
+        logger.info('Прерываем соединение с redis')
+        await redis_init.aclose()
 
 
 asyncio.run(main())

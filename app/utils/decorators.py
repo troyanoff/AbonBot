@@ -1,8 +1,7 @@
-import time
 import traceback
 
-
 from functools import wraps
+from time import time
 
 
 def safe_exec_api(func):
