@@ -7,10 +7,11 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery, PhotoSize
 
 from keyboards.inline.base import create_inline_kb
-from keyboards.menu.base import set_main_menu
+from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
 from schemas.clients import ClientCreateSchema
-from states.create_client import FSMClietnCreate
+from states.clients import FSMClientCreate
+from states.default import FSMDefault
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ router = Router()
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_first_name),
+    StateFilter(FSMClientCreate.fill_first_name),
     F.text.isalpha()
 )
 async def first_name_done(
@@ -30,11 +31,11 @@ async def first_name_done(
     await message.answer(
         text=i18n['phrases']['client_create_fill_last_name']
     )
-    await state.set_state(FSMClietnCreate.fill_last_name)
+    await state.set_state(FSMClientCreate.fill_last_name)
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_first_name)
+    StateFilter(FSMClientCreate.fill_first_name)
 )
 async def first_name_error(
     message: Message, i18n: dict
@@ -45,7 +46,7 @@ async def first_name_error(
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_last_name),
+    StateFilter(FSMClientCreate.fill_last_name),
     F.text.isalpha()
 )
 async def last_name_done(
@@ -61,17 +62,18 @@ async def last_name_done(
     buttons_list = ('gender_m', 'gender_f', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 2,
-        *buttons_list
+        *buttons_list,
+        cancel_button=False
     )
     await message.answer(
         text=i18n['phrases']['client_create_fill_gender'],
         reply_markup=keyboard
     )
-    await state.set_state(FSMClietnCreate.fill_gender)
+    await state.set_state(FSMClientCreate.fill_gender)
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_last_name)
+    StateFilter(FSMClientCreate.fill_last_name)
 )
 async def last_name_error(
     message: Message, i18n: dict
@@ -82,7 +84,7 @@ async def last_name_error(
 
 
 @router.callback_query(
-    StateFilter(FSMClietnCreate.fill_gender),
+    StateFilter(FSMClientCreate.fill_gender),
     F.data.in_(('gender_m', 'gender_f'))
 )
 async def gender_done(
@@ -94,21 +96,22 @@ async def gender_done(
     data = await state.get_data()
     logger.info(f'gender_done {data=}')
 
-    buttons_list = ('cancel', )
+    buttons_list = ('fill_cancel_photo', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,
-        *buttons_list
+        *buttons_list,
+        cancel_button=False
     )
 
     await callback.message.edit_text(
         text=i18n['phrases']['client_create_upload_photo'],
         reply_markup=keyboard
     )
-    await state.set_state(FSMClietnCreate.upload_photo)
+    await state.set_state(FSMClientCreate.upload_photo)
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_gender)
+    StateFilter(FSMClientCreate.fill_gender)
 )
 async def gender_error(
     message: Message, i18n: dict
@@ -117,7 +120,8 @@ async def gender_error(
     buttons_list = ('gender_m', 'gender_f', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 2,
-        *buttons_list
+        *buttons_list,
+        cancel_button=False
     )
     await message.answer(
         text=i18n['phrases']['client_create_fill_gender_error'],
@@ -126,7 +130,7 @@ async def gender_error(
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.upload_photo),
+    StateFilter(FSMClientCreate.upload_photo),
     F.photo[-1].as_('largest_photo')
 )
 async def photo_done(
@@ -148,18 +152,19 @@ async def photo_done(
 
     await service.create(client_data)
 
-    await set_main_menu(bot, i18n['menu'])
+    await set_client_menu(bot, client_data.tg_id, i18n['menu'])
 
     await message.answer(
         text=i18n['phrases']['client_create_done'],
         reply_markup=None
     )
     await state.clear()
+    await state.set_state(FSMDefault.default)
 
 
 @router.callback_query(
-    StateFilter(FSMClietnCreate.upload_photo),
-    F.data == 'cancel'
+    StateFilter(FSMClientCreate.upload_photo),
+    F.data == 'fill_cancel_photo'
 )
 async def photo_cancel(
     callback: CallbackQuery, state: FSMContext, i18n: dict, bot: Bot
@@ -176,26 +181,28 @@ async def photo_cancel(
 
     await service.create(client_data)
 
-    await set_main_menu(bot, i18n['menu'])
+    await set_client_menu(bot, client_data.tg_id, i18n['menu'])
 
     await callback.message.edit_text(
         text=i18n['phrases']['client_create_done'],
         reply_markup=None
     )
     await state.clear()
+    await state.set_state(FSMDefault.default)
 
 
 @router.message(
-    StateFilter(FSMClietnCreate.fill_gender)
+    StateFilter(FSMClientCreate.fill_gender)
 )
 async def photo_error(
     message: Message, i18n: dict
 ):
     
-    buttons_list = ('cancel', )
+    buttons_list = ('fill_cancel_photo', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,
-        *buttons_list
+        *buttons_list,
+        cancel_button=False
     )
 
     await message.answer(

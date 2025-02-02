@@ -3,7 +3,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 async def create_inline_kb(
-    buttons: dict, width: int, *args: str, **kwargs: str
+    buttons: dict,
+    width: int,
+    *args: str,
+    cancel_button: bool = True,
+    **kwargs: str
 ) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
 
@@ -21,5 +25,10 @@ async def create_inline_kb(
                 callback_data=button))
 
     kb_builder.row(*kb_buttons, width=width)
+    if cancel_button:
+        kb_builder.row(InlineKeyboardButton(
+            text=buttons['cancel'],
+            callback_data='cancel'
+        ))
 
     return kb_builder.as_markup()

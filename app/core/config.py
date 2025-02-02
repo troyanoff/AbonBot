@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     api_login: str = Field('0', alias='API_LOGIN')
     api_password: str = Field('0', alias='API_PASSWORD')
 
+    default_cache_ttl: int = 300
+
     access_token_ttl: int = 3600
     refresh_token_ttl: int = 864000
 

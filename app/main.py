@@ -16,12 +16,13 @@ from redis.asyncio import Redis
 
 from core.config import settings
 
-from routers.auxiliaries import deadlock
-from routers.clients import create_client
-from routers.auxiliaries import start_bot
+from routers.auxiliaries import deadlock, start_bot
+from routers.clients import create_client, update_client
+from routers.default_state import default
 
 from db import redis
 
+from middlewares.general import CallbackAnswerMiddleware
 from middlewares.i18n import TranslatorMiddleware
 from middlewares.start import ClientCheckMiddleware
 
@@ -67,11 +68,14 @@ async def main():
     logger.info('Подключаем роутеры')
     dp.include_router(start_bot.router)
     dp.include_router(create_client.router)
+    dp.include_router(update_client.router)
+    dp.include_router(default.router)
     dp.include_router(deadlock.router)
 
     # Регистрируем миддлвари
     logger.info('Подключаем миддлвари')
     dp.update.middleware(TranslatorMiddleware())
+    dp.callback_query.outer_middleware(CallbackAnswerMiddleware())
     start_bot.router.message.middleware(ClientCheckMiddleware())
 
     # Пропускаем накопившиеся апдейты и запускаем polling

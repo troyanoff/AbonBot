@@ -21,6 +21,9 @@ class RedisService:
     async def set(self, key: str, value: str | int, seconds: int):
         await self.redis.set(key, value, seconds)
 
+    async def delete(self, key: str):
+        await self.redis.delete(key)
+
 
 
 @lru_cache()
