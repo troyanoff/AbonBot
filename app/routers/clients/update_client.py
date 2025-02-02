@@ -9,8 +9,7 @@ from aiogram.types import Message, CallbackQuery, PhotoSize
 from keyboards.inline.base import create_inline_kb
 from services.clients import get_client_service
 from schemas.representations import ClientReprSchema
-from states.clients import FSMClientUpdate
-from states.default import FSMDefault
+from states.general import FSMClientUpdate, FSMDefault
 
 
 logger = logging.getLogger(__name__)

@@ -19,6 +19,7 @@ from core.config import settings
 from routers.auxiliaries import deadlock, start_bot
 from routers.clients import create_client, update_client
 from routers.default_state import default
+from routers.companies import default as default_company
 
 from db import redis
 
@@ -67,9 +68,14 @@ async def main():
     # Регистриуем роутеры
     logger.info('Подключаем роутеры')
     dp.include_router(start_bot.router)
+
     dp.include_router(create_client.router)
     dp.include_router(update_client.router)
+
     dp.include_router(default.router)
+
+    dp.include_router(default_company.router)
+
     dp.include_router(deadlock.router)
 
     # Регистрируем миддлвари

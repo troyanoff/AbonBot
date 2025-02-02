@@ -6,9 +6,9 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from keyboards.inline.base import create_inline_kb
-from states.clients import FSMClientCreate, FSMClientUpdate
-from states.start import FSMStart
-from states.default import FSMDefault
+from keyboards.inline.factories import company_inline
+from services.companies import get_company_service
+from states.general import FSMClientUpdate, FSMStart, FSMDefault
 from schemas.representations import ClientReprSchema
 
 
@@ -45,7 +45,7 @@ async def learn_command(
 
 
 @router.message(Command(commands='support'), StateFilter(FSMDefault.default))
-async def learn_command(
+async def support_command(
     message: Message,
     i18n: dict
 ):
@@ -55,7 +55,7 @@ async def learn_command(
 
 
 @router.message(Command(commands='profile'), StateFilter(FSMDefault.default))
-async def learn_command(
+async def profile_command(
     message: Message,
     i18n: dict,
     client_data: ClientReprSchema
@@ -70,7 +70,9 @@ async def learn_command(
     text = i18n['phrases']['profile'].format(
         first_name=client_data.first_name,
         last_name=client_data.last_name,
-        sex=sex
+        sex=sex,
+        companies_count=client_data.companies_count,
+        subs_count=client_data.subs_count
     )
     if not client_data.photo_id:
         await message.answer(
@@ -128,7 +130,7 @@ async def photo_cancel(
     StateFilter(FSMStart.start),
     F.data == 'cancel'
 )
-async def photo_cancel(
+async def cancel(
     callback: CallbackQuery, i18n: dict
 ):
     await callback.message.answer(

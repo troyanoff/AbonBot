@@ -26,9 +26,11 @@ class ClientMinReprSchema(MyBaseModelUUID):
 
 class ClientReprSchema(ClientMinReprSchema):
     """Client representation."""
-    companies: list['CompanyMinReprSchema'] = []
-    subscriptions: list['SubscriptionMinReprSchema'] = []
-    records: list['RecordMinReprSchema'] = []
+    companies_count: int
+    subs_count: int
+    # companies: list['CompanyMinReprSchema'] = []
+    # subscriptions: list['SubscriptionMinReprSchema'] = []
+    # records: list['RecordMinReprSchema'] = []
 
 class CompanyMinReprSchema(MyBaseModelUUID):
     """Company representation."""
@@ -43,12 +45,13 @@ class CompanyMinReprSchema(MyBaseModelUUID):
 
 class CompanyReprSchema(CompanyMinReprSchema):
     """Company representation."""
-    creator: ClientMinReprSchema
-    locations: list['LocationMinReprSchema'] = []
-    trainings: list['TrainingMinReprSchema'] = []
-    instructors: list['InstructorMinReprSchema'] = []
-    abonnements: list['AbonnementMinReprSchema'] = []
-    subscriptions: list['SubscriptionMinReprSchema'] = []
+    subs_count: int
+    # creator: ClientMinReprSchema
+    # locations: list['LocationMinReprSchema'] = []
+    # trainings: list['TrainingMinReprSchema'] = []
+    # instructors: list['InstructorMinReprSchema'] = []
+    # abonnements: list['AbonnementMinReprSchema'] = []
+    # subscriptions: list['SubscriptionMinReprSchema'] = []
 
 
 class LocationMinReprSchema(MyBaseModelUUID):

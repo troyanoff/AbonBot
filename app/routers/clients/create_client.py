@@ -10,8 +10,7 @@ from keyboards.inline.base import create_inline_kb
 from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
 from schemas.clients import ClientCreateSchema
-from states.clients import FSMClientCreate
-from states.default import FSMDefault
+from states.general import FSMClientCreate, FSMDefault
 
 
 logger = logging.getLogger(__name__)

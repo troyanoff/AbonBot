@@ -4,8 +4,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from states.clients import FSMClientCreate
-from states.start import FSMStart
+from states.general import FSMClientCreate, FSMStart
 
 
 router = Router()

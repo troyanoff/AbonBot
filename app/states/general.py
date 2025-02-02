@@ -13,3 +13,11 @@ class FSMClientUpdate(StatesGroup):
     fill_last_name = State()
     fill_gender = State()
     upload_photo = State()
+
+
+class FSMDefault(StatesGroup):
+    default = State()
+
+
+class FSMStart(StatesGroup):
+    start = State()

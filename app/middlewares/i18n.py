@@ -9,7 +9,7 @@ from typing import Any, Awaitable, Callable, Dict
 from core.config import settings
 from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
-from states.default import FSMDefault
+from states.general import FSMDefault
 
 
 logger = logging.getLogger(__name__)

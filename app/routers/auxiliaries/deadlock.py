@@ -2,7 +2,7 @@
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
-from states.start import FSMStart
+from states.general import FSMStart
 
 from phrases.ru import phrases
 from schemas.representations import ClientReprSchema

@@ -10,7 +10,7 @@ from services.cache import Cache, get_cache_service
 from schemas.clients import ClientCreateSchema
 from schemas.representations import (
     ClientReprSchema,
-    CompanyMinReprSchema,
+    CompanyReprSchema,
     SubscriptionMinReprSchema,
     RecordMinReprSchema
 )
@@ -19,23 +19,16 @@ from schemas.representations import (
 loger = logging.getLogger(__name__)
 
 
-class ClientService(BaseService):
-    base_path: str = 'clients/'
-    cache_prefix: str = 'clients'
+class CompanyService(BaseService):
+    base_path: str = 'companies/'
+    cache_prefix: str = 'companies'
 
     def __init__(self, api: APIService, cache: Cache):
         self.api = api
         self.cache = cache
 
-    async def _conversion(self, item: dict) -> ClientReprSchema:
-        # companies = item['companies']
-        # subscriptions = item['subscriptions']
-        # records = item['records']
-        # item['companies'] = [CompanyMinReprSchema(**i) for i in companies]
-        # item['subscriptions'] = [
-        #     SubscriptionMinReprSchema(**i) for i in subscriptions]
-        # item['records'] = [RecordMinReprSchema(**i) for i in records]
-        result = ClientReprSchema(**item)
+    async def _conversion(self, item: dict) -> CompanyReprSchema:
+        result = CompanyReprSchema(**item)
         return result
 
     async def create(self, client: ClientCreateSchema):
@@ -58,10 +51,8 @@ class ClientService(BaseService):
         return True
 
     async def get(self, tg_id: int) -> ClientReprSchema:
-        loger.info('Проверяем кэш')
         data = await self.cache.get(self.cache_prefix, tg_id)
         if not data:
-            loger.info('В кэше объекта не оказалось')
             params = {
                 'tg_id': tg_id
             }
@@ -72,16 +63,33 @@ class ClientService(BaseService):
             if result.status != HTTPOk.status_code:
                 return None
             data = result.data
-            loger.info('Кладем объект в кэш')
             await self.cache.set(self.cache_prefix, tg_id, data)
         item = await self._conversion(data)
         return item
+
+    async def get_list(self, client_uuid: str) -> list[CompanyReprSchema]:
+        data = await self.cache.get(self.cache_prefix, client_uuid)
+        if not data:
+            params = {
+                'creator_uuid': client_uuid
+            }
+            result = await self.api.get(
+                path=self.base_path,
+                params=params
+            )
+            if result.status != HTTPOk.status_code:
+                return None
+            data = result.data
+            if data:
+                await self.cache.set(self.cache_prefix, client_uuid, data)
+        items = [await self._conversion(i) for i in data]
+        return items
         
 
 @lru_cache()
-def get_client_service() -> ClientService:
+def get_company_service() -> CompanyService:
     api = get_api_service()
     cache = get_cache_service()
-    return ClientService(api, cache)
+    return CompanyService(api, cache)
 
 
