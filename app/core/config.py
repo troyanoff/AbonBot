@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     access_token_ttl: int = 3600
     refresh_token_ttl: int = 864000
 
+    callback_ttl: int = 300
+    callback_sep: str = ':'
+
     default_lang: str = 'ru'
 
 

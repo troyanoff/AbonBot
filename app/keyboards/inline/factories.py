@@ -3,13 +3,16 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from time import time
 
+from core.config import settings
 from schemas.representations import CompanyReprSchema
 
 
-class CompanyFactory(CallbackData, prefix='com'):
+class BaseFactory(CallbackData, prefix='', sep=settings.callback_sep):
+    create_at: int
+
+class CompanyFactory(BaseFactory, prefix='com'):
     uuid: str
     creator_tg_id: int
-    create_at: int
 
 
 async def company_inline(

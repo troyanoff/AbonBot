@@ -19,7 +19,7 @@ from core.config import settings
 from routers.auxiliaries import deadlock, start_bot
 from routers.clients import create_client, update_client
 from routers.default_state import default
-from routers.companies import default as default_company
+from routers.companies import default as default_company, create_company
 
 from db import redis
 
@@ -75,6 +75,7 @@ async def main():
     dp.include_router(default.router)
 
     dp.include_router(default_company.router)
+    dp.include_router(create_company.router)
 
     dp.include_router(deadlock.router)
 

@@ -21,3 +21,15 @@ class FSMDefault(StatesGroup):
 
 class FSMStart(StatesGroup):
     start = State()
+
+
+class FSMCompanyRepr(StatesGroup):
+    repr = State()
+
+
+class FSMCompanyCreate(StatesGroup):
+    fill_name = State()
+    fill_description = State()
+    fill_email = State()
+    upload_photo = State()
+    upload_video = State()

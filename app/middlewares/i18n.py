@@ -26,6 +26,9 @@ class TranslatorMiddleware(BaseMiddleware):
 
         for k, v in data.items():
             logger.info(f'{k} = {v}')
+        
+        # for k, v in event.__dict__.items():
+        #     logger.info(f'{k} = {v}')
 
         user: User = data.get('event_from_user')
         logger.info(user)
@@ -46,6 +49,7 @@ class TranslatorMiddleware(BaseMiddleware):
             bot = data['bots'][0]
             await set_client_menu(bot, user.id, i18n['menu_start'])
 
+        # Нужно перепродумать после тестов.
         current_state = await data['state'].get_state()
         if client and current_state is None:
             logger.info('Ставим дефолтное состояние')

@@ -7,7 +7,7 @@ from functools import lru_cache
 from services.api import APIService, get_api_service
 from services.base import BaseService
 from services.cache import Cache, get_cache_service
-from schemas.clients import ClientCreateSchema
+from schemas.companies import CompanyCreateSchema
 from schemas.representations import (
     ClientReprSchema,
     CompanyReprSchema,
@@ -31,24 +31,28 @@ class CompanyService(BaseService):
         result = CompanyReprSchema(**item)
         return result
 
-    async def create(self, client: ClientCreateSchema):
-        data = client.model_dump_json()
+    async def del_company_cache(self, creator_uuid: str):
+        await self.cache.delete(self.cache_prefix, creator_uuid)
+
+    async def create(self, company: CompanyCreateSchema):
+        data = company.model_dump_json()
         response = await self.api.post(
             path=self.base_path, data=data
         )
-        print(response)
+        if response.status != HTTPOk.status_code:
+            return None
+        await self.cache.delete(self.cache_prefix, company.creator_uuid)
         return response
 
-    async def update(self, update_data: dict):
+    async def update(self, creator_uuid: str, update_data: dict):
         data = orjson.dumps(update_data)
         response = await self.api.put(
             path=self.base_path, data=data
         )
         if response.status != HTTPOk.status_code:
             return None
-        print(response)
-        await self.cache.delete(self.cache_prefix, response.data['tg_id'])
-        return True
+        await self.cache.delete(self.cache_prefix, creator_uuid)
+        return response
 
     async def get(self, tg_id: int) -> ClientReprSchema:
         data = await self.cache.get(self.cache_prefix, tg_id)

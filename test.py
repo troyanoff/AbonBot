@@ -20,3 +20,8 @@ print(l)
 l_ = orjson.loads(l)
 
 print(l_)
+
+
+from pydantic import Field, EmailStr
+
+print(isinstance('sdlkfj@ds.ru', EmailStr))

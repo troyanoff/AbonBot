@@ -38,6 +38,9 @@ class ClientService(BaseService):
         result = ClientReprSchema(**item)
         return result
 
+    async def del_client_cache(self, tg_id: int):
+        await self.cache.delete(self.cache_prefix, tg_id)
+
     async def create(self, client: ClientCreateSchema):
         data = client.model_dump_json()
         response = await self.api.post(
@@ -54,7 +57,7 @@ class ClientService(BaseService):
         if response.status != HTTPOk.status_code:
             return None
         print(response)
-        await self.cache.delete(self.cache_prefix, response.data['tg_id'])
+        await self.del_client_cache(self.cache_prefix, response.data['tg_id'])
         return True
 
     async def get(self, tg_id: int) -> ClientReprSchema:
