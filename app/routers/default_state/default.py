@@ -119,6 +119,7 @@ async def photo_cancel(
     callback: CallbackQuery, state: FSMContext, i18n: dict
 ):
 
+    await callback.message.delete()
     await callback.message.answer(
         text=i18n['phrases']['cancel']
     )

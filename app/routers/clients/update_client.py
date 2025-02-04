@@ -67,7 +67,6 @@ async def first_name_miss(
 async def first_name_error(
     message: Message, i18n: dict
 ):
-    
     buttons_list = ('miss', )
     keyboard = await create_inline_kb(
         i18n['buttons'],

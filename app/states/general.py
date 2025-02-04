@@ -1,6 +1,7 @@
 
 from aiogram.fsm.state import State, StatesGroup
 
+
 class FSMClientCreate(StatesGroup):
     fill_first_name = State()
     fill_last_name = State()
@@ -33,3 +34,7 @@ class FSMCompanyCreate(StatesGroup):
     fill_email = State()
     upload_photo = State()
     upload_video = State()
+
+
+class FSMCompanyManage(StatesGroup):
+    manage = State()

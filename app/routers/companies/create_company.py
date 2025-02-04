@@ -52,6 +52,8 @@ async def name_done(
 async def name_error(
     message: Message, i18n: dict
 ):
+    logger.info('name_error')
+
     keyboard = await create_inline_kb(
         i18n['buttons'], 1
     )
@@ -91,6 +93,8 @@ async def description_done(
 async def description_error(
     message: Message, i18n: dict
 ):
+    logger.info('description_error')
+
     keyboard = await create_inline_kb(
         i18n['buttons'], 1
     )
@@ -202,7 +206,8 @@ async def photo_cancel(
 async def photo_error(
     message: Message, i18n: dict
 ):
-    
+    logger.info('photo_error')
+
     buttons_list = ('fill_cancel_photo', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,
@@ -224,7 +229,7 @@ async def video_done(
     client_data: ClientReprSchema
 ):
     logger.info('video_done')
-    
+
     data = await state.get_data()
     new_company = data['new_company']
     new_company['video_unique_id'] = message.video.file_unique_id
@@ -261,7 +266,7 @@ async def video_cancel(
     client_data: ClientReprSchema
 ):
     logger.info('video_cancel')
-    
+
     data = await state.get_data()
     new_company = data['new_company']
     await state.update_data(new_company=new_company)
@@ -293,7 +298,8 @@ async def video_cancel(
 async def video_error(
     message: Message, i18n: dict
 ):
-    
+    logger.info('video_error')
+
     buttons_list = ('fill_cancel_video', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,
@@ -304,4 +310,3 @@ async def video_error(
         text=i18n['phrases']['company_create_upload_video_error'],
         reply_markup=keyboard
     )
-
