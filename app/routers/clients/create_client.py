@@ -10,6 +10,7 @@ from keyboards.inline.base import create_inline_kb
 from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
 from schemas.clients import ClientCreateSchema
+from schemas.utils import FailSchema
 from states.general import FSMClientCreate, FSMDefault
 
 
@@ -89,7 +90,6 @@ async def last_name_error(
 async def gender_done(
     callback: CallbackQuery, state: FSMContext, i18n: dict
 ):
-    
     await state.update_data(sex=callback.data[-1])
 
     data = await state.get_data()
@@ -115,7 +115,6 @@ async def gender_done(
 async def gender_error(
     message: Message, i18n: dict
 ):
-    
     buttons_list = ('gender_m', 'gender_f', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 2,
@@ -136,7 +135,6 @@ async def photo_done(
     message: Message, state: FSMContext, i18n: dict,
     largest_photo: PhotoSize, bot: Bot
 ):
-    
     await state.update_data(
         tg_id=message.from_user.id,
         photo_unique_id=largest_photo.file_unique_id,
@@ -168,20 +166,27 @@ async def photo_done(
 async def photo_cancel(
     callback: CallbackQuery, state: FSMContext, i18n: dict, bot: Bot
 ):
-    
     await state.update_data(
         tg_id=callback.from_user.id,
+        photo_unique_id='',
+        photo_id='',
     )
 
     data = await state.get_data()
     client_data = ClientCreateSchema(**data)
-
     service = get_client_service()
+    result = await service.create(client_data)
 
-    await service.create(client_data)
+    if isinstance(result, FailSchema):
+        await callback.message.edit_text(
+            text=i18n['phrases']['error_phrase'],
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
 
     await set_client_menu(bot, client_data.tg_id, i18n['menu'])
-
     await callback.message.edit_text(
         text=i18n['phrases']['client_create_done'],
         reply_markup=None
@@ -196,7 +201,6 @@ async def photo_cancel(
 async def photo_error(
     message: Message, i18n: dict
 ):
-    
     buttons_list = ('fill_cancel_photo', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,

@@ -24,20 +24,22 @@ class TranslatorMiddleware(BaseMiddleware):
     ) -> Any:
         logger.info('Присваиваем i18n')
 
-        for k, v in data.items():
-            logger.info(f'{k} = {v}')
-        
+        # for k, v in data.items():
+        #     logger.info(f'{k} = {v}')
+
         # for k, v in event.__dict__.items():
         #     logger.info(f'{k} = {v}')
 
         user: User = data.get('event_from_user')
-        logger.info(user)
+        logger.info(f'{user=}')
 
         if user is None:
             return await handler(event, data)
 
         service = get_client_service()
         client = await service.get(user.id)
+
+        logger.info(f'actual_{client=}')
         data['client_data'] = client if client else None
 
         user_lang = user.language_code

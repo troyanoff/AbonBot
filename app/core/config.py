@@ -39,6 +39,10 @@ class Settings(BaseSettings):
 
     default_lang: str = 'ru'
 
+    short_field_len: int = 64
+    long_field_len: int = 512
+    tg_media_id_len: int = 100
+    tg_media_unique_id_len: int = 20
 
 
 settings = Settings()

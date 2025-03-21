@@ -1,156 +1,158 @@
-from datetime import datetime
-from pydantic import Field, EmailStr
+from datetime import datetime, time
+from pydantic import EmailStr
 from uuid import UUID
 
-from schemas.base import MyBaseModelUUID, SexEnum, ClientRoleEnum
+from schemas.base import MyBaseModelRepr, BaseReprListSchema, SexEnum
+from schemas.general import ItemNameReprMS, HumanNameReprMS, TGPhotoReprMS
 
 
-class UserReprSchema(MyBaseModelUUID):
+# Users
+class UserReprSchema(MyBaseModelRepr):
     """User representation."""
     login: str
     description: str
-    created_at: datetime
     role: str
 
-class ClientMinReprSchema(MyBaseModelUUID):
+
+class UserListSchema(BaseReprListSchema):
+    items: list[UserReprSchema]
+
+
+# Clients
+class ClientMinReprSchema(TGPhotoReprMS, HumanNameReprMS, MyBaseModelRepr):
     """Client representation."""
-    tg_id: int
-    first_name: str = Field(max_length=50)
-    last_name: str = Field(max_length=50)
-    photo_id: str | None = Field(max_length=100, default=None)
-    photo_unique_id: str | None = Field(max_length=20, default=None)
-    sex: SexEnum | None = Field(default=None)
-    role: ClientRoleEnum | None = Field(default=None)
-    created_at: datetime
+    sex: SexEnum
+    is_premium: bool
 
 
 class ClientReprSchema(ClientMinReprSchema):
     """Client representation."""
-    companies_count: int
-    subs_count: int
-    # companies: list['CompanyMinReprSchema'] = []
-    # subscriptions: list['SubscriptionMinReprSchema'] = []
-    # records: list['RecordMinReprSchema'] = []
+    pass
 
-class CompanyMinReprSchema(MyBaseModelUUID):
+
+class ClientListSchema(BaseReprListSchema):
+    items: list[ClientReprSchema]
+
+
+# Companies
+class CompanyMinReprSchema(TGPhotoReprMS, ItemNameReprMS, MyBaseModelRepr):
     """Company representation."""
-    name: str = Field(max_length=50)
     creator_uuid: UUID
-    description: str = Field(max_length=300)
-    photo: str | None = Field(max_length=500, default=None)
-    video: str | None = Field(max_length=500, default=None)
     email: EmailStr
-    created_at: datetime
+    max_hour_cancel: int
 
 
 class CompanyReprSchema(CompanyMinReprSchema):
     """Company representation."""
-    subs_count: int
-    # creator: ClientMinReprSchema
-    # locations: list['LocationMinReprSchema'] = []
-    # trainings: list['TrainingMinReprSchema'] = []
-    # instructors: list['InstructorMinReprSchema'] = []
-    # abonnements: list['AbonnementMinReprSchema'] = []
-    # subscriptions: list['SubscriptionMinReprSchema'] = []
+    pass
 
 
-class LocationMinReprSchema(MyBaseModelUUID):
+class CompanyListSchema(BaseReprListSchema):
+    items: list[CompanyReprSchema]
+
+
+# Locations
+class LocationMinReprSchema(TGPhotoReprMS, ItemNameReprMS, MyBaseModelRepr):
     """Location representation."""
-    name: str = Field(max_length=50)
     company_uuid: UUID
-    description: str = Field(max_length=300)
-    city: str = Field(max_length=50)
-    street: str = Field(max_length=60)
-    house: str = Field(max_length=10)
-    flat: str = Field(max_length=10)
-    photo: str | None = Field(max_length=500, default=None)
-    video: str | None = Field(max_length=500, default=None)
+    city: str
+    street: str
+    house: str
+    flat: str
     timezone: int
-    created_at: datetime
 
 
 class LocationReprSchema(LocationMinReprSchema):
     """Location representation."""
     company: CompanyMinReprSchema
-    trainings: list['TrainingMinReprSchema'] = []
-    abonnements: list['AbonnementMinReprSchema'] = []
-    timeslots: list['TimeslotMinReprSchema'] = []
 
 
-class TrainingMinReprSchema(MyBaseModelUUID):
-    """Training representation."""
-    name: str = Field(max_length=100)
+class LocationListSchema(BaseReprListSchema):
+    items: list[LocationReprSchema]
+
+
+# Actions
+class ActionMinReprSchema(TGPhotoReprMS, ItemNameReprMS, MyBaseModelRepr):
+    """Action representation."""
     company_uuid: UUID
-    description: str | None = Field(max_length=300, default=None)
-    photo: str | None = Field(max_length=500, default=None)
-    video: str | None = Field(max_length=500, default=None)
-    created_at: datetime
 
 
-class TrainingReprSchema(TrainingMinReprSchema):
-    """Training representation."""
+class ActionReprSchema(ActionMinReprSchema):
+    """Action representation."""
     company: CompanyMinReprSchema
-    locations: list[LocationMinReprSchema] = []
-    abonnements: list['AbonnementMinReprSchema'] = []
-    timeslots: list['TimeslotMinReprSchema'] = []
 
-class AbonnementMinReprSchema(MyBaseModelUUID):
-    """Abonnement representation."""
-    name: str = Field(max_length=50)
+
+class ActionListSchema(BaseReprListSchema):
+    items: list[ActionReprSchema]
+
+
+# Cards
+class CardMinReprSchema(ItemNameReprMS, MyBaseModelRepr):
+    """Card representation."""
     company_uuid: UUID
-    description: str | None = Field(max_length=300, default=None)
-    by_delta: bool = False
-    month_delta: int = None
-    by_count: bool = False
-    count: int = None
-    created_at: datetime
+    by_delta: bool
+    month_delta: int
+    by_count: bool
+    count: int
+    by_limit: bool
+    time_limit: time | None
+    freeze: bool
+    freezing_days: int
+    is_archived: bool
 
 
-class AbonnementReprSchema(AbonnementMinReprSchema):
-    """Abonnement representation."""
+class CardReprSchema(CardMinReprSchema):
+    """Card representation."""
     company: CompanyMinReprSchema
-    locations: list[LocationMinReprSchema] = []
-    trainings: list[TrainingMinReprSchema] = []
+    events: list['EventMinReprSchema'] = []
 
-class InstructorMinReprSchema(MyBaseModelUUID):
+
+class CardListSchema(BaseReprListSchema):
+    items: list[CardReprSchema]
+
+
+# Instructors
+class InstructorMinReprSchema(TGPhotoReprMS, MyBaseModelRepr):
     """Instructor representation."""
     company_uuid: UUID
-    tg_id: int
-    first_name: str = Field(max_length=50)
-    last_name: str = Field(max_length=50)
-    photo: str | None = Field(max_length=500, default=None)
-    video: str | None = Field(max_length=500, default=None)
-    created_at: datetime
+    client_uuid: UUID
 
 
 class InstructorReprSchema(InstructorMinReprSchema):
     """Instructor representation."""
     company: CompanyMinReprSchema
-    timeslots: list['TimeslotMinReprSchema'] = []
+    client: ClientMinReprSchema
 
 
-class SubscriptionMinReprSchema(MyBaseModelUUID):
+class InstructorListSchema(BaseReprListSchema):
+    items: list[InstructorReprSchema]
+
+
+# Subscriptions
+class SubscriptionMinReprSchema(MyBaseModelRepr):
     """Subscription representation."""
     client_uuid: UUID
     company_uuid: UUID
-    abonnement_uuid: UUID
     role: str
-    created_at: datetime
 
 
 class SubscriptionReprSchema(SubscriptionMinReprSchema):
     """Subscription representation."""
     client: ClientMinReprSchema
     company: CompanyMinReprSchema
-    abonnement: AbonnementMinReprSchema
 
 
-class RecordMinReprSchema(MyBaseModelUUID):
+class SubscriptionListSchema(BaseReprListSchema):
+    items: list[SubscriptionReprSchema]
+
+
+# Records
+class RecordMinReprSchema(MyBaseModelRepr):
     """Record representation."""
     company_uuid: UUID
     client_uuid: UUID
     timeslot_uuid: UUID
-    created_at: datetime
+    issuance_uuid: UUID
 
 
 class RecordReprSchema(RecordMinReprSchema):
@@ -160,23 +162,81 @@ class RecordReprSchema(RecordMinReprSchema):
     timeslot: 'TimeslotMinReprSchema'
 
 
-class TimeslotMinReprSchema(MyBaseModelUUID):
+class RecordListSchema(BaseReprListSchema):
+    items: list[RecordReprSchema]
+
+
+# Timeslots
+class TimeslotMinReprSchema(MyBaseModelRepr):
     """Timeslot representation."""
-    description: str | None = Field(max_length=400, default=None)
     company_uuid: UUID
-    location_uuid: UUID
-    training_uuid: UUID
+    event_uuid: UUID
     instructor_uuid: UUID
-    start: datetime
-    end: datetime
+    start_time: datetime
+    end_time: datetime
+    by_count: bool
     max_count: int
+    section: str
+    total_records: int
+    cancel: bool
+    cancel_total_records: int
 
 
 class TimeslotReprSchema(TimeslotMinReprSchema):
     """Timeslot representation."""
     company: CompanyMinReprSchema
-    location: LocationMinReprSchema
-    training: TrainingMinReprSchema
+    event: 'EventLTReprSchema'
     instructor: InstructorMinReprSchema
-    records: list[RecordMinReprSchema] = []
 
+
+class TimeslotListSchema(BaseReprListSchema):
+    items: list[TimeslotReprSchema]
+
+
+# Issuances
+class IssuanceMinReprSchema(MyBaseModelRepr):
+    """Issuance representation."""
+    company_uuid: UUID
+    client_uuid: UUID
+    card_uuid: UUID
+    start_at: datetime
+    now_count: int
+    was_spent: bool = None
+    expired_at: datetime | None = None
+    is_freeze: bool
+    last_freezing: datetime | None
+    freezing_interval: int
+
+
+class IssuanceReprSchema(IssuanceMinReprSchema):
+    """Issuance representation."""
+    company: CompanyMinReprSchema
+    client: ClientMinReprSchema
+    card: CardMinReprSchema
+
+
+class IssuanceListSchema(BaseReprListSchema):
+    items: list[IssuanceReprSchema]
+
+
+# Events
+class EventMinReprSchema(MyBaseModelRepr):
+    """Event representation."""
+    company_uuid: UUID
+    location_uuid: UUID
+    action_uuid: UUID
+    is_personal: bool
+
+
+class EventLTReprSchema(EventMinReprSchema):
+    location: LocationMinReprSchema
+    action: ActionMinReprSchema
+
+
+class EventReprSchema(EventLTReprSchema):
+    """Event representation."""
+    company: CompanyMinReprSchema
+
+
+class EventListSchema(BaseReprListSchema):
+    items: list[EventReprSchema]

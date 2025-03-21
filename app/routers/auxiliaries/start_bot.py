@@ -19,5 +19,5 @@ async def process_cancel_command(
     await message.answer(
         text=i18n['phrases']['client_create_fill_first_name']
     )
-    
+
     await state.set_state(FSMClientCreate.fill_first_name)

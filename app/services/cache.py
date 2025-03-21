@@ -1,22 +1,24 @@
 import orjson
 
 from functools import lru_cache
+from redis.asyncio import Redis
 from typing import Any
 
 from core.config import settings
-from services.storage import RedisService, get_redis_service
+from db.redis import get_redis
+
 
 class Cache:
-    
-    def __init__(self, storage: RedisService):
-        self.storage = storage
+
+    def __init__(self, redis: Redis):
+        self.redis = redis
 
     async def get(self, prefix: str, key: str | int) -> Any:
         full_key = f'{prefix}:{key}'
-        value = await self.storage.get(full_key)
+        value = await self.redis.get(full_key)
         if not value:
             return None
-        value = orjson.loads(value)
+        value = orjson.loads(value.decode('utf-8'))
         return value
 
     async def set(
@@ -28,18 +30,23 @@ class Cache:
     ) -> None:
         full_key = f'{prefix}:{key}'
         json_value = orjson.dumps(value)
-        await self.storage.set(full_key, json_value, ttl)
+        await self.redis.set(full_key, json_value, ttl)
 
     async def delete(
         self,
         prefix: str,
         key: str | int
-    ):
+    ) -> None:
         full_key = f'{prefix}:{key}'
-        await self.storage.delete(full_key)
+        await self.redis.delete(full_key)
+
+    async def exists(self, prefix: str, key: str) -> int:
+        full_key = f'{prefix}:{key}'
+        result = await self.redis.exists(full_key)
+        return result
 
 
 @lru_cache()
 def get_cache_service() -> Cache:
-    storage = get_redis_service()
-    return Cache(storage)
+    redis = get_redis()
+    return Cache(redis)

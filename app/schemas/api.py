@@ -8,5 +8,5 @@ class Login(MyBaseModel):
 
 class ResponseShema(MyBaseModel):
     status: int
-    data: list | dict
+    data: list | dict | str
     ttc: float = 0.0

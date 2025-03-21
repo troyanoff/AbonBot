@@ -32,6 +32,7 @@ from phrases.general import translations
 
 logger = logging.getLogger(__name__)
 
+
 async def on_startup(dp):
     print("Бот запущен!")
 

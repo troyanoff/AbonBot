@@ -2,6 +2,7 @@ import logging
 import orjson
 
 from aiohttp.web import HTTPOk
+from pprint import pformat
 from functools import lru_cache
 
 from services.api import APIService, get_api_service
@@ -14,9 +15,10 @@ from schemas.representations import (
     SubscriptionMinReprSchema,
     RecordMinReprSchema
 )
+from schemas.utils import ExceptSchema, DoneSchema, FailSchema
 
 
-loger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ClientService(BaseService):
@@ -38,33 +40,36 @@ class ClientService(BaseService):
         result = ClientReprSchema(**item)
         return result
 
-    async def del_client_cache(self, tg_id: int):
-        await self.cache.delete(self.cache_prefix, tg_id)
+    # async def del_client_cache(self, tg_id: int):
+    #     await self.cache.delete(self.cache_prefix, tg_id)
 
     async def create(self, client: ClientCreateSchema):
         data = client.model_dump_json()
         response = await self.api.post(
             path=self.base_path, data=data
         )
-        print(response)
-        return response
+        logger.info(f'client_create {response=}')
+        if isinstance(response, (FailSchema, ExceptSchema)):
+            return FailSchema(response=response)
+        return DoneSchema(response=response)
 
-    async def update(self, update_data: dict):
+    async def update(self, tg_id: int, update_data: dict):
         data = orjson.dumps(update_data)
-        response = await self.api.put(
+        response = await self.api.patch(
             path=self.base_path, data=data
         )
-        if response.status != HTTPOk.status_code:
-            return None
-        print(response)
-        await self.del_client_cache(self.cache_prefix, response.data['tg_id'])
+        if isinstance(response, (FailSchema, ExceptSchema)):
+            logger.error(
+                f'Возникла ошибка: {pformat(response.model_dump())}')
+            return False
+        await self.cache.delete(self.cache_prefix, tg_id)
         return True
 
     async def get(self, tg_id: int) -> ClientReprSchema:
-        loger.info('Проверяем кэш')
+        logger.info('Проверяем кэш')
         data = await self.cache.get(self.cache_prefix, tg_id)
         if not data:
-            loger.info('В кэше объекта не оказалось')
+            logger.info('В кэше объекта не оказалось')
             params = {
                 'tg_id': tg_id
             }
@@ -72,19 +77,19 @@ class ClientService(BaseService):
                 path=self.base_path + 'get',
                 params=params
             )
-            if result.status != HTTPOk.status_code:
+            if isinstance(result, (FailSchema, ExceptSchema)):
+                logger.error(
+                    f'Возникла ошибка: {pformat(result.model_dump())}')
                 return None
-            data = result.data
-            loger.info('Кладем объект в кэш')
+            data = result.response.data
+            logger.info('Кладем объект в кэш')
             await self.cache.set(self.cache_prefix, tg_id, data)
         item = await self._conversion(data)
         return item
-        
+
 
 @lru_cache()
 def get_client_service() -> ClientService:
     api = get_api_service()
     cache = get_cache_service()
     return ClientService(api, cache)
-
-

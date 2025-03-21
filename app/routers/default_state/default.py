@@ -1,5 +1,5 @@
 
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
@@ -7,6 +7,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from keyboards.inline.base import create_inline_kb
 from keyboards.inline.factories import company_inline
+from keyboards.menu.base import set_client_menu
 from services.companies import get_company_service
 from states.general import FSMClientUpdate, FSMStart, FSMDefault
 from schemas.representations import ClientReprSchema
@@ -15,10 +16,11 @@ from schemas.representations import ClientReprSchema
 router = Router()
 
 
-@router.message(CommandStart(), StateFilter(default_state))
+@router.message(CommandStart(), StateFilter(FSMDefault.default))
 async def process_start_command(
     message: Message,
     state: FSMContext,
+    bot: Bot,
     i18n: dict,
     client_data: ClientReprSchema | None
 ):
@@ -29,6 +31,7 @@ async def process_start_command(
         await state.set_state(FSMStart.start)
         return
 
+    await set_client_menu(bot, client_data.tg_id, i18n['menu'])
     await message.answer(
         text=i18n['phrases']['start']
     )
@@ -71,8 +74,8 @@ async def profile_command(
         first_name=client_data.first_name,
         last_name=client_data.last_name,
         sex=sex,
-        companies_count=client_data.companies_count,
-        subs_count=client_data.subs_count
+        companies_count=0,  # to do
+        subs_count=0  # to do
     )
     if not client_data.photo_id:
         await message.answer(
@@ -96,12 +99,11 @@ async def update_profile(
     state: FSMContext,
     i18n: dict
 ):
-    buttons_list = ('cancel', )
+    buttons_list = ('miss', )
     keyboard = await create_inline_kb(
         i18n['buttons'],
         1,
         *buttons_list,
-        cancel_button=False,
     )
 
     await callback.message.answer(

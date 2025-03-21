@@ -1,21 +1,26 @@
 import aiohttp
+import logging
 
 from functools import lru_cache
 
 from core.config import settings
 from schemas.api import Login, ResponseShema
+from schemas.utils import DoneSchema, FailSchema
 from services.cache import Cache, get_cache_service
 from utils.decorators import safe_exec_api
+
+
+logger = logging.getLogger(__name__)
 
 
 class APIService:
     base_url: str = settings.api_host + settings.api_version
     cache_prefix: str = 'api_service'
-    
+
     def __init__(self, cache: Cache):
         self.cache = cache
 
-    async def _get_token(self) -> str:
+    async def _login(self) -> str:
         """Get bearer token."""
         headers = {
             'Content-Type': 'application/json'
@@ -34,10 +39,9 @@ class APIService:
                 params=params,
                 data=data
             ) as response:
-                status = response.status
+                # status = response.status
                 response = await response.json()
-                print(status)
-                print(response)
+                logger.info(f'{response=}')
         access_token = response['access_token']
         refresh_token = response['refresh_token']
         await self.cache.set(
@@ -53,14 +57,49 @@ class APIService:
             settings.refresh_token_ttl)
         return access_token
 
+    async def _refresh(self, refresh_token: str) -> str:
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {refresh_token}'
+        }
+        url = self.base_url + 'auth/refresh'
+        timeout = aiohttp.ClientTimeout(total=20)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                url=url,
+                headers=headers
+            ) as response:
+                # status = response.status
+                response = await response.json()
+                logger.info(f'{response=}')
+        access_token = response['access_token']
+        await self.cache.set(
+            self.cache_prefix,
+            'access_token',
+            access_token,
+            settings.access_token_ttl
+        )
+        return access_token
 
     async def _auth_handler(self) -> str:
         """Create or get auth token."""
-        token_by_cache = await self.cache.get(
+        token_by_cache_exist = await self.cache.exists(
             self.cache_prefix, 'access_token')
-        if token_by_cache:
+        if token_by_cache_exist:
+            token_by_cache = await self.cache.get(
+                self.cache_prefix, 'access_token'
+            )
             return f'Bearer {token_by_cache}'
-        token_by_api = await self._get_token()
+        refresh_by_cache_exist = await self.cache.exists(
+            self.cache_prefix, 'refresh_token'
+        )
+        if refresh_by_cache_exist:
+            refresh_by_cache = await self.cache.get(
+                self.cache_prefix, 'refresh_token'
+            )
+            access_token = await self._refresh(refresh_by_cache)
+            return f'Bearer {access_token}'
+        token_by_api = await self._login()
         return f'Bearer {token_by_api}'
 
     async def _get_headers(self) -> dict:
@@ -90,8 +129,17 @@ class APIService:
                 data=data
             ) as response:
                 status = response.status
-                response = await response.json()
-        return ResponseShema(status=status, data=response)
+                try:
+                    response = await response.json()
+                except Exception:
+                    response = await response.text()
+        if 200 <= status < 300:
+            return DoneSchema(
+                response=ResponseShema(status=status, data=response)
+            )
+        return FailSchema(
+            response=ResponseShema(status=status, data=response)
+        )
 
     @safe_exec_api
     async def post(
@@ -113,31 +161,49 @@ class APIService:
                 data=data
             ) as response:
                 status = response.status
-                response = await response.json()
-        return ResponseShema(status=status, data=response)
+                try:
+                    response = await response.json()
+                except Exception:
+                    response = await response.text()
+        if 200 <= status < 300:
+            return DoneSchema(
+                response=ResponseShema(status=status, data=response)
+            )
+        return FailSchema(
+            response=ResponseShema(status=status, data=response)
+        )
 
     @safe_exec_api
-    async def put(
+    async def patch(
         self,
         path: str,
         params: dict = {},
         data: str = None,
         timeout: int = 20
     ) -> ResponseShema:
-        """PUT request."""
+        """PATCH request."""
         url = self.base_url + path
         headers = await self._get_headers()
         timeout = aiohttp.ClientTimeout(total=timeout)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.put(
+            async with session.patch(
                 url=url,
                 headers=headers,
                 params=params,
                 data=data
             ) as response:
                 status = response.status
-                response = await response.json()
-        return ResponseShema(status=status, data=response)
+                try:
+                    response = await response.json()
+                except Exception:
+                    response = await response.text()
+        if 200 <= status < 300:
+            return DoneSchema(
+                response=ResponseShema(status=status, data=response)
+            )
+        return FailSchema(
+            response=ResponseShema(status=status, data=response)
+        )
 
 
 @lru_cache()

@@ -1,0 +1,27 @@
+version: '3'
+services:
+
+  redis_abonbot:
+    image: redis:latest
+    container_name: redis_abonbot
+    restart: always
+    volumes:
+      - redis_abonbot_value:/root/redis
+    ports:
+      - 6379
+
+#   abonbot_api:
+#     image: abonbot_api
+#     build: ./
+#     container_name: abonbot_api
+#     depends_on:
+#       - postgres_abonbot_api
+#       - redis_abonbot_api
+#     env_file:
+#       - ./.env
+#     ports:
+#       - 7557
+
+
+volumes:
+  redis_abonbot_value:

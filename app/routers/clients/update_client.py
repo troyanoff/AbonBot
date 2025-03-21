@@ -25,7 +25,7 @@ async def first_name_done(
     message: Message, state: FSMContext, i18n: dict
 ):
     await state.update_data(first_name=message.text)
-    
+
     buttons_list = ('miss', )
     keyboard = await create_inline_kb(
         i18n['buttons'],
@@ -222,9 +222,8 @@ async def photo_done(
     largest_photo: PhotoSize, bot: Bot,
     client_data: ClientReprSchema
 ):
-    
     await state.update_data(
-        uuid=client_data.uuid,
+        uuid=client_data.uuid.__str__(),
         photo_unique_id=largest_photo.file_unique_id,
         photo_id=largest_photo.file_id
     )
@@ -232,7 +231,14 @@ async def photo_done(
     data = await state.get_data()
     logger.info(f'photo_done {data=}')
     service = get_client_service()
-    await service.update(data)
+    result = await service.update(message.from_user.id, data)
+    if not result:
+        await message.answer(
+            text=i18n['phrases']['error_phrase']
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
 
     await message.answer(
         text=i18n['phrases']['client_update_done']
@@ -245,18 +251,26 @@ async def photo_done(
     StateFilter(FSMClientUpdate.upload_photo),
     F.data == 'miss'
 )
-async def gender_miss(
+async def photo_miss(
     callback: CallbackQuery, state: FSMContext, i18n: dict,
     client_data: ClientReprSchema
 ):
     await state.update_data(
-        uuid=client_data.uuid
+        uuid=client_data.uuid.__str__()
     )
 
     data = await state.get_data()
     logger.info(f'photo_done {data=}')
     service = get_client_service()
-    await service.update(data)
+    result = await service.update(callback.from_user.id, data)
+    if not result:
+        await callback.message.edit_text(
+            text=i18n['phrases']['error_phrase'],
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
 
     await callback.message.edit_text(
         text=i18n['phrases']['client_update_done']
@@ -274,15 +288,23 @@ async def photo_cancel(
     client_data: ClientReprSchema
 ):
     await state.update_data(
-        uuid=client_data.uuid,
-        photo_unique_id=None,
-        photo_id=None
+        uuid=client_data.uuid.__str__(),
+        photo_unique_id='',
+        photo_id=''
     )
 
     data = await state.get_data()
     logger.info(f'photo_done {data=}')
     service = get_client_service()
-    await service.update(data)
+    result = await service.update(callback.from_user.id, data)
+    if not result:
+        await callback.message.edit_text(
+            text=i18n['phrases']['error_phrase'],
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
 
     await callback.message.edit_text(
         text=i18n['phrases']['client_update_done']
@@ -297,7 +319,6 @@ async def photo_cancel(
 async def photo_error(
     message: Message, i18n: dict
 ):
-    
     buttons_list = ('miss', )
     keyboard = await create_inline_kb(
         i18n['buttons'], 1,

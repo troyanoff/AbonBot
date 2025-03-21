@@ -1,29 +1,35 @@
-from datetime import datetime
-from pydantic import Field, EmailStr
+from pydantic import EmailStr, field_validator
 from uuid import UUID
 
-from schemas.base import MyBaseModel, MyBaseModelUUID
+from core.pd_annotations import empty_positive_int, empty_email
+from schemas.base import MyBaseModel, MinItemSchema
+from schemas.general import (
+    ItemNameCreateMS, ItemNameUpdateMS, TGPhotoCreateMS, TGPhotoUpdateMS
+)
 
 
-class CompanyCreateSchema(MyBaseModel):
+class CompanyCreateSchema(MyBaseModel, ItemNameCreateMS, TGPhotoCreateMS):
     """Body to company create."""
-    name: str = Field(max_length=50)
     creator_uuid: UUID
-    description: str = Field(max_length=300)
-    photo_id: str | None = Field(max_length=100, default=None)
-    photo_unique_id: str | None = Field(max_length=20, default=None)
-    video_id: str | None = Field(max_length=100, default=None)
-    video_unique_id: str | None = Field(max_length=20, default=None)
     email: EmailStr
+    max_hour_cancel: empty_positive_int
+
+    @field_validator('max_hour_cancel', mode='after')
+    @classmethod
+    def check_max_hour_cancel(cls, value: int) -> int:
+        if value > 24:
+            raise ValueError('Too many hours for max_hour_cancel')
+        return value
 
 
-class CompanyUpdateSchema(MyBaseModelUUID):
+class CompanyUpdateSchema(MinItemSchema, ItemNameUpdateMS, TGPhotoUpdateMS):
     """Body to company update."""
-    name: str = Field(max_length=50, default='empty')
-    creator_uuid: UUID = Field(default='empty')
-    description: str = Field(max_length=300, default='empty')
-    photo_id: str | None = Field(max_length=100, default='empty')
-    photo_unique_id: str | None = Field(max_length=20, default='empty')
-    video_id: str | None = Field(max_length=100, default='empty')
-    video_unique_id: str | None = Field(max_length=20, default='empty')
-    email: EmailStr = Field(default='empty')
+    email: empty_email
+    max_hour_cancel: empty_positive_int
+
+    @field_validator('max_hour_cancel', mode='after')
+    @classmethod
+    def check_max_hour_cancel(cls, value: int) -> int:
+        if value > 24:
+            raise ValueError('Too many hours for max_hour_cancel')
+        return value

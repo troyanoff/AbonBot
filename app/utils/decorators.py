@@ -3,20 +3,22 @@ import traceback
 from functools import wraps
 from time import time
 
+from schemas.utils import ExceptSchema, DoneSchema, FailSchema
+
 
 def safe_exec_api(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
         start = time()
         try:
-            result = await func(*args, **kwargs)
+            result: DoneSchema | FailSchema = await func(*args, **kwargs)
             end = time() - start
-            result.ttc = end
+            result.response.ttc = end
             return result
-        except Exception as e:
-            print(traceback.format_exc())
+        except Exception:
             end = time() - start
-            print(
-                f'{func.__name__}: time to complete: {end:.2f}')
-            return None
+            return ExceptSchema(
+                msg=f'{func.__name__}: time to complete: {end:.2f}',
+                exc=traceback.format_exc()
+            )
     return wrapper
