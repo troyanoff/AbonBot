@@ -4,7 +4,8 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from states.general import FSMClientCreate, FSMStart
+from routers.clients.create.state import FSMClientCreate
+from states.general import FSMStart
 
 
 router = Router()
@@ -20,4 +21,4 @@ async def process_cancel_command(
         text=i18n['phrases']['client_create_fill_first_name']
     )
 
-    await state.set_state(FSMClientCreate.fill_first_name)
+    await state.set_state(FSMClientCreate.first_name)

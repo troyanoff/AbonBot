@@ -6,7 +6,7 @@ from aiogram.fsm.state import default_state
 from aiogram.types import TelegramObject, User
 from typing import Any, Awaitable, Callable, Dict
 
-from core.config import settings
+from core.config import settings as st
 from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
 from states.general import FSMDefault
@@ -43,8 +43,13 @@ class TranslatorMiddleware(BaseMiddleware):
         data['client_data'] = client if client else None
 
         user_lang = user.language_code
+        lang = (
+            user_lang if user_lang in st.supported_langs else st.default_lang
+        )
+        data['lang'] = lang
+
         translations = data.get('_translations')
-        i18n = translations.get(user_lang, settings.default_lang)
+        i18n = translations.get(user_lang, st.default_lang)
         data['i18n'] = i18n
 
         if not client:

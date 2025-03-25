@@ -51,7 +51,7 @@ class ClientService(BaseService):
         logger.info(f'client_create {response=}')
         if isinstance(response, (FailSchema, ExceptSchema)):
             return FailSchema(response=response)
-        return DoneSchema(response=response)
+        return response
 
     async def update(self, tg_id: int, update_data: dict):
         data = orjson.dumps(update_data)
