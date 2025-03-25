@@ -17,7 +17,6 @@ from redis.asyncio import Redis
 from core.config import settings
 
 from routers import router
-from routers.auxiliaries import deadlock, start_bot
 from routers.companies import default as default_company, create_company
 
 from db import redis
@@ -67,20 +66,15 @@ async def main():
 
     # Регистриуем роутеры
     logger.info('Подключаем роутеры')
-    dp.include_router(start_bot.router)
-
     dp.include_router(router)
 
     dp.include_router(default_company.router)
     dp.include_router(create_company.router)
 
-    dp.include_router(deadlock.router)
-
     # Регистрируем миддлвари
     logger.info('Подключаем миддлвари')
     dp.update.middleware(TranslatorMiddleware())
     dp.callback_query.outer_middleware(CallbackAnswerMiddleware())
-    start_bot.router.message.middleware(ClientCheckMiddleware())
 
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)

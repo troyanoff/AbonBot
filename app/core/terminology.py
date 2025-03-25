@@ -5,6 +5,9 @@ from core.items.menus import menu_ru, menu_en, menu_start_ru, menu_start_en
 
 @dataclass
 class TermCategoryRU:
+    deadlock: str = (
+        'Ваше действие не было предусмотрено 😔'
+    )
     start_unknow: str = (
         'Привет 🏆'
         '\n\n'

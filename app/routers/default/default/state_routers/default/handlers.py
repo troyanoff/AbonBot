@@ -122,7 +122,7 @@ async def update_profile(
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:error'
+    state_handler = f'{router_state.state}:update_profile'
     logger.info(state_handler)
 
     terminology_lang: Lang = getattr(terminology, lang)
@@ -159,15 +159,3 @@ async def cancel(
     )
     await state.clear()
     await state.set_state(FSMDefault.default)
-
-
-# @router.callback_query(
-#     StateFilter(FSMStart.start),
-#     F.data == 'cancel'
-# )
-# async def cancel(
-#     callback: CallbackQuery, lang: str
-# ):
-#     await callback.message.answer(
-#         text=i18n['phrases']['cancel']
-#     )
