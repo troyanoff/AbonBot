@@ -18,7 +18,6 @@ from core.config import settings
 
 from routers import router
 from routers.auxiliaries import deadlock, start_bot
-from routers.default import default
 from routers.companies import default as default_company, create_company
 
 from db import redis
@@ -71,8 +70,6 @@ async def main():
     dp.include_router(start_bot.router)
 
     dp.include_router(router)
-
-    dp.include_router(default.router)
 
     dp.include_router(default_company.router)
     dp.include_router(create_company.router)

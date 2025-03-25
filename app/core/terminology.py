@@ -5,30 +5,43 @@ from core.items.menus import menu_ru, menu_en, menu_start_ru, menu_start_en
 
 @dataclass
 class TermCategoryRU:
+    start_unknow: str = (
+        'Привет 🏆'
+        '\n\n'
+        'Этот бот поможет организовать удобный процесс записи на тренировку.'
+        '\n\n'
+        'Для продолжения работы нужно зарегистрироваться 📝'
+        'Откройте <b>меню</b> и выберете <b>"Регистрация"</b>'
+    )
     error: str = (
         'Что-то пошло не так 😔'
         '\n\n'
         'Пожалуйста, попробуйте еще раз через некоторое время'
     )
+    cancel: str = (
+        'Процедура прервана. Откройте меню и выберете следующее действие.'
+    )
+    m: str = 'Мужской'
+    f: str = 'Женский'
 
 
 @dataclass
-class TermCategoryEN:
-    error: str = (
-        'Что-то пошло не так 😔'
-        '\n\n'
-        'Пожалуйста, попробуйте еще раз через некоторое время'
-    )
+class TermCategoryEN(TermCategoryRU):
+    pass
 
 
 @dataclass
 class ButtonCategoryRU:
     cancel: str = 'Отмена'
+    miss_state: str = 'Пропустить шаг'
+
+    async def get_dict_with(self, *keys) -> dict:
+        return {key: getattr(self, key) for key in keys}
 
 
 @dataclass
-class ButtonCategoryEN:
-    cancel: str = 'Отмена'
+class ButtonCategoryEN(ButtonCategoryRU):
+    pass
 
 
 @dataclass

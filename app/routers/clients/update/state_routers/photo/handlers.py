@@ -5,11 +5,15 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, PhotoSize
 
-from keyboards.inline.base import create_inline_kb
+from core.config import settings as st
+from core.terminology import terminology as core_term, Lang as core_Lang
+from keyboards.inline.base import create_simply_inline_kb
 from services.clients import get_client_service
 from schemas.representations import ClientReprSchema
 from routers.clients.update.state import FSMClientUpdate
 from routers.default.state import FSMDefault
+from .terminology import terminology, Lang
+from ..gender.terminology import terminology as last_term, Lang as last_Lang
 
 
 logger = logging.getLogger(__name__)
@@ -22,11 +26,14 @@ router_state = FSMClientUpdate.photo
     StateFilter(router_state),
     F.photo[-1].as_('largest_photo')
 )
-async def photo_done(
-    message: Message, state: FSMContext, i18n: dict,
+async def done(
+    message: Message, state: FSMContext, lang: str,
     largest_photo: PhotoSize, bot: Bot,
     client_data: ClientReprSchema
 ):
+    state_handler = f'{router_state.state}:done'
+    logger.info(state_handler)
+
     await state.update_data(
         uuid=client_data.uuid.__str__(),
         photo_unique_id=largest_photo.file_unique_id,
@@ -34,19 +41,25 @@ async def photo_done(
     )
 
     data = await state.get_data()
-    logger.info(f'photo_done {data=}')
+
+    if await st.is_debag():
+        logger.info(f'{state_handler} {data=}')
+
     service = get_client_service()
     result = await service.update(message.from_user.id, data)
+
     if not result:
+        core_term_lang: core_Lang = getattr(core_term, lang)
         await message.answer(
-            text=i18n['phrases']['error_phrase']
+            text=core_term_lang.terms.error
         )
         await state.clear()
         await state.set_state(FSMDefault.default)
         return
 
+    terminology_lang: Lang = getattr(terminology, lang)
     await message.answer(
-        text=i18n['phrases']['client_update_done']
+        text=terminology_lang.terms.done
     )
     await state.clear()
     await state.set_state(FSMDefault.default)
@@ -54,31 +67,39 @@ async def photo_done(
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'miss'
+    F.data == FSMClientUpdate.miss_button
 )
-async def photo_miss(
-    callback: CallbackQuery, state: FSMContext, i18n: dict,
+async def miss_state(
+    callback: CallbackQuery, state: FSMContext, lang: str,
     client_data: ClientReprSchema
 ):
+    state_handler = f'{router_state.state}:miss_state'
+    logger.info(state_handler)
+
     await state.update_data(
         uuid=client_data.uuid.__str__()
     )
 
     data = await state.get_data()
-    logger.info(f'photo_done {data=}')
+    if await st.is_debag():
+        data = await state.get_data()
+        logger.info(f'{state_handler} {data=}')
+
     service = get_client_service()
     result = await service.update(callback.from_user.id, data)
     if not result:
+        core_term_lang: core_Lang = getattr(core_term, lang)
         await callback.message.edit_text(
-            text=i18n['phrases']['error_phrase'],
+            text=core_term_lang.terms.error,
             reply_markup=None
         )
         await state.clear()
         await state.set_state(FSMDefault.default)
         return
 
+    terminology_lang: Lang = getattr(terminology, lang)
     await callback.message.edit_text(
-        text=i18n['phrases']['client_update_done']
+        text=terminology_lang.terms.done
     )
     await state.clear()
     await state.set_state(FSMDefault.default)
@@ -86,12 +107,15 @@ async def photo_miss(
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'fill_cancel_photo'
+    F.data.in_(FSMClientUpdate.photo_callbacks)
 )
-async def photo_cancel(
-    callback: CallbackQuery, state: FSMContext, i18n: dict, bot: Bot,
+async def cancel_photo(
+    callback: CallbackQuery, state: FSMContext, lang: str,
     client_data: ClientReprSchema
 ):
+    state_handler = f'{router_state.state}:cancel_photo'
+    logger.info(state_handler)
+
     await state.update_data(
         uuid=client_data.uuid.__str__(),
         photo_unique_id='',
@@ -99,20 +123,25 @@ async def photo_cancel(
     )
 
     data = await state.get_data()
-    logger.info(f'photo_done {data=}')
+
+    if await st.is_debag():
+        logger.info(f'{state_handler} {data=}')
+
     service = get_client_service()
     result = await service.update(callback.from_user.id, data)
     if not result:
+        core_term_lang: core_Lang = getattr(core_term, lang)
         await callback.message.edit_text(
-            text=i18n['phrases']['error_phrase'],
+            text=core_term_lang.terms.error,
             reply_markup=None
         )
         await state.clear()
         await state.set_state(FSMDefault.default)
         return
 
+    terminology_lang: Lang = getattr(terminology, lang)
     await callback.message.edit_text(
-        text=i18n['phrases']['client_update_done']
+        text=terminology_lang.terms.done
     )
     await state.clear()
     await state.set_state(FSMDefault.default)
@@ -121,16 +150,27 @@ async def photo_cancel(
 @router.message(
     StateFilter(router_state)
 )
-async def photo_error(
-    message: Message, i18n: dict
+async def error(
+    message: Message, lang: str
 ):
-    buttons_list = ('miss', )
-    keyboard = await create_inline_kb(
-        i18n['buttons'], 1,
-        *buttons_list
+    state_handler = f'{router_state.state}:error'
+    logger.info(state_handler)
+
+    terminology_lang: Lang = getattr(terminology, lang)
+    core_term_lang: core_Lang = getattr(core_term, lang)
+    last_term_lang: last_Lang = getattr(last_term, lang)
+
+    buttons = last_term_lang.buttons.__dict__
+    core_buttons = await core_term_lang.buttons.get_dict_with(
+        *FSMClientUpdate.core_buttons)
+    buttons.update(core_buttons)
+
+    keyboard = await create_simply_inline_kb(
+        buttons,
+        1
     )
 
     await message.answer(
-        text=i18n['phrases']['client_update_upload_photo_error'],
+        text=terminology_lang.terms.error,
         reply_markup=keyboard
     )

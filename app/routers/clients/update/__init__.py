@@ -1,16 +1,16 @@
 from aiogram import Router
 
-from .state_routers import (
-    first_name, last_name, gender, photo
-)
+from .state_routers.first_name.handlers import router as fn_router
+from .state_routers.last_name.handlers import router as ln_router
+from .state_routers.gender.handlers import router as gender_router
+from .state_routers.photo.handlers import router as photo_router
 
 
 router = Router()
 
-
 router.include_routers(
-    first_name.router,
-    last_name.router,
-    gender.router,
-    photo.router
+    fn_router,
+    ln_router,
+    gender_router,
+    photo_router
 )

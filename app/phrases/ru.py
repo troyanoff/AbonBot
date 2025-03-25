@@ -191,7 +191,7 @@ buttons = {
     'fill_cancel_photo': 'Продолжить без фото',
     'fill_cancel_video': 'Продолжить без видео',
     'update_profile': 'Изменить профиль',
-    'miss': 'Пропустить шаг',
+    'miss_state': 'Пропустить шаг',
     'cancel': 'Отмена',
     'manage_company': 'Управлять компанией',
     'back': '⬅️',
