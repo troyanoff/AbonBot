@@ -11,12 +11,15 @@ from schemas.companies import CompanyCreateSchema
 from schemas.representations import (
     ClientReprSchema,
     CompanyReprSchema,
+    CompanyListSchema,
     SubscriptionMinReprSchema,
     RecordMinReprSchema
 )
+from schemas.utils import DoneSchema, FailSchema, ExceptSchema
+from pprint import pformat
 
 
-loger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CompanyService(BaseService):
@@ -31,6 +34,10 @@ class CompanyService(BaseService):
         result = CompanyReprSchema(**item)
         return result
 
+    async def list_conversion(self, items: dict) -> CompanyListSchema:
+        result = CompanyListSchema(**items)
+        return result
+
     async def del_company_cache(self, creator_uuid: str):
         await self.cache.delete(self.cache_prefix, creator_uuid)
 
@@ -39,9 +46,9 @@ class CompanyService(BaseService):
         response = await self.api.post(
             path=self.base_path, data=data
         )
-        if response.status != HTTPOk.status_code:
-            return None
-        await self.cache.delete(self.cache_prefix, company.creator_uuid)
+        logger.info(f'company create {response=}')
+        if isinstance(response, (FailSchema, ExceptSchema)):
+            return FailSchema()
         return response
 
     async def update(self, creator_uuid: str, update_data: dict):
@@ -71,8 +78,8 @@ class CompanyService(BaseService):
         item = await self._conversion(data)
         return item
 
-    async def get_list(self, client_uuid: str) -> list[CompanyReprSchema]:
-        data = await self.cache.get(self.cache_prefix, client_uuid)
+    async def get_list(self, client_uuid: str) -> CompanyListSchema:
+        data = await self.cache.get(self.cache_prefix, f'{client_uuid=}')
         if not data:
             params = {
                 'creator_uuid': client_uuid
@@ -81,19 +88,19 @@ class CompanyService(BaseService):
                 path=self.base_path,
                 params=params
             )
-            if result.status != HTTPOk.status_code:
-                return None
-            data = result.data
-            if data:
-                await self.cache.set(self.cache_prefix, client_uuid, data)
-        items = [await self._conversion(i) for i in data]
+            if isinstance(result, (FailSchema, ExceptSchema)):
+                logger.error(
+                    f'Возникла ошибка: {pformat(result.model_dump())}')
+                return FailSchema()
+            data = result.response.data
+            logger.info('Кладем объект в кэш')
+            await self.cache.set(self.cache_prefix, f'{client_uuid=}', data)
+        items = await self.list_conversion(data)
         return items
-        
+
 
 @lru_cache()
 def get_company_service() -> CompanyService:
     api = get_api_service()
     cache = get_cache_service()
     return CompanyService(api, cache)
-
-

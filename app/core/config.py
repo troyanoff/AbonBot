@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     api_password: str = Field('0', alias='API_PASSWORD')
 
     default_cache_ttl: int = 5
+    default_limit_keyboard_page: int = 5
 
     access_token_ttl: int = 3600
     refresh_token_ttl: int = 864000

@@ -3,7 +3,6 @@ import orjson
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel
-from uuid import UUID
 
 
 def orjson_dumps(v, *, default):
@@ -19,7 +18,7 @@ class MyBaseModel(BaseModel):
 
 
 class MyBaseModelRepr(BaseModel):
-    uuid: UUID
+    uuid: str
     created_at: datetime
     updated_at: datetime
 
@@ -40,7 +39,7 @@ class BaseReprListSchema(BaseModel):
 
 
 class MinItemSchema(BaseModel):
-    uuid: UUID
+    uuid: str
 
     class Config:
         json_loads = orjson.loads

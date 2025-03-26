@@ -17,13 +17,11 @@ from redis.asyncio import Redis
 from core.config import settings
 
 from routers import router
-from routers.companies import default as default_company, create_company
 
 from db import redis
 
 from middlewares.general import CallbackAnswerMiddleware
 from middlewares.i18n import TranslatorMiddleware
-from middlewares.start import ClientCheckMiddleware
 
 from phrases.general import translations
 
@@ -67,9 +65,6 @@ async def main():
     # Регистриуем роутеры
     logger.info('Подключаем роутеры')
     dp.include_router(router)
-
-    dp.include_router(default_company.router)
-    dp.include_router(create_company.router)
 
     # Регистрируем миддлвари
     logger.info('Подключаем миддлвари')
