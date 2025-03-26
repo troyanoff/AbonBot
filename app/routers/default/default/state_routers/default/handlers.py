@@ -6,11 +6,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
 
+from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import create_simply_inline_kb
 from keyboards.menu.base import set_client_menu
+from services.companies import get_company_service
 from states.general import FSMStart
-from schemas.representations import ClientReprSchema
+from schemas.representations import ClientReprSchema, CompanyListSchema
+from schemas.utils import FailSchema
 from routers.clients.update.state import FSMClientUpdate
 from routers.default.state import FSMDefault
 from routers.companies.create.state_routers.name.handlers import start_create
@@ -170,6 +173,28 @@ async def create_company(
 ):
     state_handler = f'{router_state.state}:create_company'
     logger.info(state_handler)
+
+    service = get_company_service()
+    companies: CompanyListSchema = await service.get_list(
+        client_data.uuid)
+
+    if await st.is_debag():
+        logger.info(f'{companies=}')
+
+    core_term_lang: core_Lang = getattr(core_term, lang)
+    if isinstance(companies, FailSchema):
+        await callback.message.answer(
+            text=core_term_lang.terms.error
+        )
+        return
+
+    if companies.total_count > 0 and not client_data.is_premium:
+        terminology_lang: Lang = getattr(terminology, lang)
+        await callback.message.answer(
+            text=terminology_lang.terms.max_companies
+        )
+        return
+
     return await start_create(
         message=callback.message, state=state,
         lang=lang, client_data=client_data
