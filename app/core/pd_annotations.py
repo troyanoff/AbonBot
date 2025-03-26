@@ -54,6 +54,10 @@ empty_positive_int = Annotated[
     int,
     Field(gt=0, default=0)
 ]
+empty_non_negative_int = Annotated[
+    int,
+    Field(ge=0, default=0)
+]
 
 # Boolean
 false_bool = Annotated[

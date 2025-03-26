@@ -44,10 +44,8 @@ async def done(
     terminology_lang: Lang = getattr(terminology, lang)
     core_term_lang: core_Lang = getattr(core_term, lang)
 
-    buttons = terminology_lang.buttons.__dict__
-    core_buttons = await core_term_lang.buttons.get_dict_with(
+    buttons = await core_term_lang.buttons.get_dict_with(
         *FSMCompanyCreate.core_buttons)
-    buttons.update(core_buttons)
 
     keyboard = await create_simply_inline_kb(
         buttons,

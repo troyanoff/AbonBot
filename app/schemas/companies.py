@@ -1,7 +1,7 @@
 from pydantic import EmailStr, field_validator
 from uuid import UUID
 
-from core.pd_annotations import empty_positive_int, empty_email
+from core.pd_annotations import empty_non_negative_int, empty_email
 from schemas.base import MyBaseModel, MinItemSchema
 from schemas.general import (
     ItemNameCreateMS, ItemNameUpdateMS, TGPhotoCreateMS, TGPhotoUpdateMS
@@ -12,7 +12,7 @@ class CompanyCreateSchema(MyBaseModel, ItemNameCreateMS, TGPhotoCreateMS):
     """Body to company create."""
     creator_uuid: UUID
     email: EmailStr
-    max_hour_cancel: empty_positive_int
+    max_hour_cancel: empty_non_negative_int
 
     @field_validator('max_hour_cancel', mode='after')
     @classmethod
@@ -25,7 +25,7 @@ class CompanyCreateSchema(MyBaseModel, ItemNameCreateMS, TGPhotoCreateMS):
 class CompanyUpdateSchema(MinItemSchema, ItemNameUpdateMS, TGPhotoUpdateMS):
     """Body to company update."""
     email: empty_email
-    max_hour_cancel: empty_positive_int
+    max_hour_cancel: empty_non_negative_int
 
     @field_validator('max_hour_cancel', mode='after')
     @classmethod
