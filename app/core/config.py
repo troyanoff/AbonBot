@@ -1,17 +1,9 @@
-import os
-
 from dotenv import load_dotenv
-# from logging import config as logging_config
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-# from core.logger import LOGGING
-
 
 load_dotenv()
-
-
-# logging_config.dictConfig(LOGGING)
 
 
 class Settings(BaseSettings):

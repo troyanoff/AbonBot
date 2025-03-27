@@ -107,7 +107,7 @@ class NotClientMiddleware(BaseMiddleware):
             terminology_lang: Lang = getattr(terminology, lang)
             bot = data['bots'][0]
             await set_client_menu(
-                bot, user.id, terminology_lang.menu_start.__dict__)
+                bot, user.id, terminology_lang.menu_start)
 
         # Нужно перепродумать после тестов.
         current_state = await data['state'].get_state()
