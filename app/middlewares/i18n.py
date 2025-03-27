@@ -63,5 +63,5 @@ class TranslatorMiddleware(BaseMiddleware):
             await data['state'].set_state(FSMDefault.default)
             data['raw_state'] = 'FSMDefault:default'
 
-        logger.info(f'\n{'=' * 80}\n{data['raw_state']}\n{'=' * 80}')
+        logger.info(f'\n{'=' * 80}\nstate={data['raw_state']}\n{'=' * 80}')
         return await handler(event, data)

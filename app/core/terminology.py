@@ -37,6 +37,9 @@ class TermCategoryEN(TermCategoryRU):
 class ButtonCategoryRU:
     cancel: str = 'Отмена'
     miss_state: str = 'Пропустить шаг'
+    general: str = 'На главную'
+    back: str = '⬅️'
+    forward: str = '➡️'
 
     async def get_dict_with(self, *keys) -> dict:
         return {key: getattr(self, key) for key in keys}

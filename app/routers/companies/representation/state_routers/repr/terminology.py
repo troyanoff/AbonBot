@@ -9,28 +9,24 @@ class TermCategoryRU:
         'Чтобы создать компанию, зайдите в свой профиль и выберете '
         '"Создать компанию"'
     )
-
-
-@dataclass
-class TermCategoryEN:
-    not_company: str = (
-        'У вас пока нет компаний'
-        '\n\n'
-        'Чтобы создать компанию, зайдите в свой профиль и выберете '
-        '"Создать компанию"'
+    company_list: str = (
+        'Список ваших компаний'
     )
 
 
 @dataclass
-class ButtonCategoryRU:
-    gender_m: str = 'Мужской'
-    gender_f: str = 'Женский'
+class TermCategoryEN(TermCategoryRU):
+    pass
 
 
 @dataclass
-class ButtonCategoryEN:
-    gender_m: str = 'Мужской'
-    gender_f: str = 'Женский'
+class ButtonCategoryRU:
+    pass
+
+
+@dataclass
+class ButtonCategoryEN(ButtonCategoryRU):
+    pass
 
 
 @dataclass

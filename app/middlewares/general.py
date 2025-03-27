@@ -21,11 +21,12 @@ class CallbackAnswerMiddleware(BaseMiddleware):
         logger.info('Отвечаем на колбэк')
         await event.answer()
 
-        if settings.callback_sep in event.data:
-            callback_time = int(event.data.split(':')[1])
-            now = int(time())
-            if now - callback_time > settings.callback_ttl:
-                logger.info(f'Сейчас {now}, колбек создан в {callback_time}')
-                return
+        # if settings.callback_sep in event.data:
+        #     callback_time = int(event.data.split(':')[1])
+        #     now = int(time())
+        #     if now - callback_time > settings.callback_ttl:
+        #         logger.info(f'Сейчас {now}, колбек создан в {callback_time}')
+        #         return
 
+        logger.info(f'\n{'=' * 80}\ncallback={event.data}\n{'=' * 80}')
         return await handler(event, data)

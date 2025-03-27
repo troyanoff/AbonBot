@@ -13,11 +13,14 @@ from time import time
 
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
-from keyboards.inline.base import create_simply_inline_kb
+from keyboards.inline.base import (
+    create_simply_inline_kb, create_offset_inline_kb
+)
 from keyboards.inline.companies import company_repr_inline
 from routers.companies.manage.state_routers.default.handlers import manage
 from services.companies import get_company_service
 from routers.companies.representation.state import FSMCompanyRepr
+from routers.default.state import FSMDefault
 from schemas.utils import FailSchema
 from schemas.representations import ClientReprSchema, CompanyListSchema
 from utils.support import choice_back_company, choice_forward_company
@@ -75,125 +78,167 @@ async def companies_repr(
         )
         return
 
+    companies_offset = []
+    count = 1
+    for company in companies.items:
+        companies_offset.append(
+            {
+                'uuid': company.uuid,
+                'name': company.name,
+                'num': count
+            }
+        )
+        count += 1
 
-
-
-    # if not client_data.companies_count:
-    #     await message.answer(
-    #         text=i18n['phrases']['company_empty']
-    #     )
-    #     return
-
-
-    # service = get_company_service()
-    # companies = await service.get_list(client_data.uuid)
-
-    # keyboard = await company_repr_inline(i18n, len(companies) == 1)
-
-    # company = companies[0]
-
-    # await state.update_data(now_company_uuid=company.uuid)
-
-    # text = i18n['phrases']['company_repr'].format(
-    #     number=1,
-    #     name=company.name,
-    #     description=company.description
-    # )
-
-    # await message.answer(
-    #     text=text,
-    #     reply_markup=keyboard
-    # )
-
-
-# @router.callback_query(
-#     # CompanyFactory.filter(),
-#     StateFilter(FSMCompanyRepr.repr)
-# )
-# async def company(
-#     callback: CallbackQuery,
-#     # callback_data: CompanyFactory,
-#     i18n: dict,
-#     state: FSMContext,
-#     client_data: ClientReprSchema,
-# ):
-#     logger.info('company handler')
-#     # text = callback_data
-
-#     # company_uuid = callback_data.uuid
-#     await callback.message.answer(text='company handler repr')
-
-
-@router.callback_query(
-    StateFilter(router_state),
-    F.data == 'forward'
-)
-async def forward_company(
-    callback: CallbackQuery,
-    # callback_data: CompanyFactory,
-    i18n: dict,
-    state: FSMContext,
-    client_data: ClientReprSchema,
-):
-    logger.info('forward_company handler')
-
-    service = get_company_service()
-    companies = await service.get_list(client_data.uuid)
-
-    state_data = await state.get_data()
-
-    company = await choice_forward_company(
-        state_data['now_company_uuid'], companies)
-
-    keyboard = await company_repr_inline(i18n, len(companies) == 1)
-
-    await state.update_data(now_company_uuid=company.uuid)
-
-    text = i18n['phrases']['company_repr'].format(
-        number=1,
-        name=company.name,
-        description=company.description
+    await state.update_data(
+        companies_offset=companies_offset
     )
 
-    await callback.message.edit_text(
-        text=text,
+    keyboard = await create_offset_inline_kb(
+        data=companies_offset,
+        callback_prefix='company',
+        side_index=0,
+        back=False,
+        lang=lang
+    )
+    await message.answer(
+        text=terminology_lang.terms.company_list,
         reply_markup=keyboard
     )
 
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'back'
+    F.data.regexp((r'^back:\d+$'))
 )
-async def back_company(
+async def back(
     callback: CallbackQuery,
-    # callback_data: CompanyFactory,
-    i18n: dict,
     state: FSMContext,
     client_data: ClientReprSchema,
-    bot: Bot
+    lang: str
 ):
-    logger.info('back_company handler')
+    state_handler = f'{router_state.state}:back'
+    logger.info(state_handler)
 
     service = get_company_service()
-    companies = await service.get_list(client_data.uuid)
+    companies: CompanyListSchema = await service.get_list(
+        client_data.uuid.__str__())
 
-    state_data = await state.get_data()
+    if await st.is_debag():
+        logger.info(f'{companies=}')
 
-    company = await choice_back_company(
-        state_data['now_company_uuid'], companies)
+    if isinstance(companies, FailSchema):
+        core_term_lang: core_Lang = getattr(core_term, lang)
+        await callback.message.answer(
+            text=core_term_lang.terms.error,
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
 
-    keyboard = await company_repr_inline(i18n, len(companies) == 1)
+    terminology_lang: Lang = getattr(terminology, lang)
 
-    await state.update_data(now_company_uuid=company.uuid)
+    data = await state.get_data()
+    companies_offset = data['companies_offset']
+    side_index = int(callback.data.split(':')[-1])
 
-    text = i18n['phrases']['company_repr'].format(
-        number=1,
-        name=company.name,
-        description=company.description
+    keyboard = await create_offset_inline_kb(
+        data=companies_offset,
+        callback_prefix='company',
+        side_index=side_index,
+        back=True,
+        lang=lang
     )
 
     await callback.message.edit_text(
-        text=text,
+        text=terminology_lang.terms.company_list,
         reply_markup=keyboard
+    )
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data.regexp((r'^forward:\d+$'))
+)
+async def forward(
+    callback: CallbackQuery,
+    state: FSMContext,
+    client_data: ClientReprSchema,
+    lang: str
+):
+    state_handler = f'{router_state.state}:forward'
+    logger.info(state_handler)
+
+    service = get_company_service()
+    companies: CompanyListSchema = await service.get_list(
+        client_data.uuid.__str__())
+
+    if await st.is_debag():
+        logger.info(f'{companies=}')
+
+    if isinstance(companies, FailSchema):
+        core_term_lang: core_Lang = getattr(core_term, lang)
+        await callback.message.answer(
+            text=core_term_lang.terms.error,
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
+
+    terminology_lang: Lang = getattr(terminology, lang)
+
+    data = await state.get_data()
+    companies_offset = data['companies_offset']
+    side_index = int(callback.data.split(':')[-1])
+
+    keyboard = await create_offset_inline_kb(
+        data=companies_offset,
+        callback_prefix='company',
+        side_index=side_index,
+        back=False,
+        lang=lang
+    )
+
+    await callback.message.edit_text(
+        text=terminology_lang.terms.company_list,
+        reply_markup=keyboard
+    )
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data.regexp((
+        r'^company:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-'
+        r'[0-9a-f]{12}$'
+    ))
+)
+async def to_manage(
+    callback: CallbackQuery,
+    state: FSMContext,
+    client_data: ClientReprSchema,
+    lang: str
+):
+    state_handler = f'{router_state.state}:to_manage'
+    logger.info(state_handler)
+
+    company_uuid = callback.data.split(':')[-1]
+    service = get_company_service()
+    company: CompanyListSchema = await service.get(
+        uuid=company_uuid)
+
+    if isinstance(company, FailSchema):
+        core_term_lang: core_Lang = getattr(core_term, lang)
+        await callback.message.answer(
+            text=core_term_lang.terms.error,
+            reply_markup=None
+        )
+        await state.clear()
+        await state.set_state(FSMDefault.default)
+        return
+
+    await manage(
+        message=callback.message, lang=lang, client_data=client_data,
+        state=state, company=company, edit_text=True
     )

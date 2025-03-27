@@ -61,20 +61,23 @@ class CompanyService(BaseService):
         await self.cache.delete(self.cache_prefix, creator_uuid)
         return response
 
-    async def get(self, tg_id: int) -> ClientReprSchema:
-        data = await self.cache.get(self.cache_prefix, tg_id)
+    async def get(self, uuid: str) -> ClientReprSchema:
+        data = await self.cache.get(self.cache_prefix, uuid)
         if not data:
             params = {
-                'tg_id': tg_id
+                'uuid': uuid
             }
             result = await self.api.get(
                 path=self.base_path + 'get',
                 params=params
             )
-            if result.status != HTTPOk.status_code:
-                return None
-            data = result.data
-            await self.cache.set(self.cache_prefix, tg_id, data)
+            if isinstance(result, (FailSchema, ExceptSchema)):
+                logger.error(
+                    f'Возникла ошибка: {pformat(result.model_dump())}')
+                return FailSchema()
+            data = result.response.data
+            logger.info('Кладем объект в кэш')
+            await self.cache.set(self.cache_prefix, uuid, data)
         item = await self._conversion(data)
         return item
 
