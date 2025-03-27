@@ -7,7 +7,7 @@ from functools import lru_cache
 from services.api import APIService, get_api_service
 from services.base import BaseService
 from services.cache import Cache, get_cache_service
-from schemas.companies import CompanyCreateSchema
+from schemas.companies import CompanyCreateSchema, CompanyUpdateSchema
 from schemas.representations import (
     ClientReprSchema,
     CompanyReprSchema,
@@ -51,15 +51,17 @@ class CompanyService(BaseService):
             return FailSchema()
         return response
 
-    async def update(self, creator_uuid: str, update_data: dict):
-        data = orjson.dumps(update_data)
-        response = await self.api.put(
-            path=self.base_path, data=data
+    async def update(self, data: CompanyUpdateSchema):
+        json_data = data.model_dump_json(exclude_unset=True)
+        response = await self.api.patch(
+            path=self.base_path, data=json_data
         )
-        if response.status != HTTPOk.status_code:
-            return None
-        await self.cache.delete(self.cache_prefix, creator_uuid)
-        return response
+        if isinstance(response, (FailSchema, ExceptSchema)):
+            logger.error(
+                f'Возникла ошибка: {pformat(response.model_dump())}')
+            return FailSchema()
+        await self.cache.delete(self.cache_prefix, data.uuid)
+        return DoneSchema()
 
     async def get(self, uuid: str) -> ClientReprSchema:
         data = await self.cache.get(self.cache_prefix, uuid)

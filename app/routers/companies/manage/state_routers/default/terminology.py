@@ -35,7 +35,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    pass
+    update_company: str = 'Изменить данные компании'
 
 
 @dataclass

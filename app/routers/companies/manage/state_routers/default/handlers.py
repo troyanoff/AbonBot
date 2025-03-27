@@ -31,13 +31,16 @@ async def manage(
     message: Message,
     lang: str,
     state: FSMContext,
-    client_data: ClientReprSchema,
     company: CompanyReprSchema,
     edit_text: bool = False
 ):
     state_handler = f'{router_state.state}:manage'
     logger.info(state_handler)
     await state.set_state(router_state)
+
+    await state.update_data(
+        company_uuid=company.uuid
+    )
 
     terminology_lang: Lang = getattr(terminology, lang)
     core_term_lang: core_Lang = getattr(core_term, lang)
@@ -82,3 +85,24 @@ async def manage(
             caption=text,
             reply_markup=keyboard
         )
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data == 'update_company'
+)
+async def update_profile(
+    callback: CallbackQuery,
+    state: FSMContext,
+    client_data: ClientReprSchema,
+    lang: str
+):
+    state_handler = f'{router_state.state}:update_company'
+    logger.info(state_handler)
+
+    from routers.companies.update.state_routers.name.handlers \
+        import start_update
+    await start_update(
+        message=callback.message, state=state, lang=lang,
+        client_data=client_data
+    )

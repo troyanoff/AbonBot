@@ -73,7 +73,7 @@ async def companies_repr(
 
     if companies.total_count == 1:
         await manage(
-            message=message, lang=lang, client_data=client_data, state=state,
+            message=message, lang=lang, state=state,
             company=companies.items[0]
         )
         return
@@ -239,6 +239,6 @@ async def to_manage(
         return
 
     await manage(
-        message=callback.message, lang=lang, client_data=client_data,
+        message=callback.message, lang=lang,
         state=state, company=company, edit_text=True
     )
