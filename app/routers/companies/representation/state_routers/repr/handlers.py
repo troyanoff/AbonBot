@@ -1,29 +1,23 @@
 import logging
 
-from aiogram import Router, F, Bot
-from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import default_state
 from aiogram.types import (
-    Message, CallbackQuery, ReplyKeyboardRemove, InlineKeyboardMarkup,
-    InlineKeyboardButton
+    Message, CallbackQuery
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from time import time
 
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import (
     create_simply_inline_kb, create_offset_inline_kb
 )
-from keyboards.inline.companies import company_repr_inline
 from routers.companies.manage.state_routers.default.handlers import manage
 from services.companies import get_company_service
 from routers.companies.representation.state import FSMCompanyRepr
 from routers.default.state import FSMDefault
 from schemas.utils import FailSchema
 from schemas.representations import ClientReprSchema, CompanyListSchema
-from utils.support import choice_back_company, choice_forward_company
 from .terminology import terminology, Lang
 
 

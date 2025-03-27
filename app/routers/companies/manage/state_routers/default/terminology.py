@@ -35,6 +35,11 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
+    locations: str = 'Локации 🏠'
+    trainings: str = 'Тренировки ⛷'
+    instructors: str = 'Инструкторы 🙋‍♀️'
+    abonnements: str = 'Абонементы 📜'
+    timeslots: str = 'Таймслоты 🕔'
     update_company: str = 'Изменить данные компании'
 
 

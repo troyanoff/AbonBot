@@ -7,6 +7,8 @@ from core.items.menus import menu_ru, menu_en, menu_start_ru, menu_start_en
 class TermCategoryRU:
     deadlock: str = (
         'Ваше действие не было предусмотрено 😔'
+        '\n'
+        'Попробуйте найти нужные вам функции в меню 📝'
     )
     start_unknow: str = (
         'Привет 🏆'
