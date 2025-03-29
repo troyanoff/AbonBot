@@ -3,7 +3,7 @@ import logging
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 
 # from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
@@ -33,7 +33,8 @@ async def manage(
     await state.set_state(router_state)
 
     await state.update_data(
-        company_uuid=company.uuid
+        company_uuid=company.uuid,
+        company_name=company.name
     )
 
     terminology_lang: Lang = getattr(terminology, lang)
@@ -56,8 +57,25 @@ async def manage(
     )
     if edit_text:
         if not company.photo_id:
+            if message.photo:
+                await message.delete()
+                await message.answer(
+                    text=text,
+                    reply_markup=keyboard
+                )
+                return
             await message.edit_text(
                 text=text,
+                reply_markup=keyboard
+            )
+            return
+        if message.photo:
+            media = InputMediaPhoto(
+                media=company.photo_id,
+                caption=text
+            )
+            await message.edit_media(
+                media=media,
                 reply_markup=keyboard
             )
             return

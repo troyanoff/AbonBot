@@ -79,7 +79,7 @@ async def locations_repr(
     if locations.total_count == 1:
         await manage(
             message=message, lang=lang, state=state,
-            company=locations.items[0]
+            item=locations.items[0], edit_text=True
         )
         return
 
@@ -104,29 +104,32 @@ async def locations_repr(
         callback_prefix=callback_prefix,
         side_index=0,
         back=False,
-        lang=lang
+        lang=lang,
+        additional_buttons=terminology_lang.buttons.__dict__,
     )
     await message.answer(
-        text=terminology_lang.terms.locations_list,
+        text=terminology_lang.terms.locations_list.format(
+            company_name=data['company_name']
+        ),
         reply_markup=keyboard
     )
 
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'create_location'
+    F.data == 'create'
 )
-async def create_location(
+async def create(
     callback: CallbackQuery,
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:create_location'
+    state_handler = f'{router_state.state}:create'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
     from routers.locations.create.state_routers.name.handlers \
         import start_create
 
-    await start_create(message=callback.message, state=state, lang=lang)
+    await start_create(callback=callback, state=state, lang=lang)
 
 
 @router.callback_query(
@@ -152,11 +155,14 @@ async def back(
         callback_prefix=callback_prefix,
         side_index=side_index,
         back=True,
-        lang=lang
+        lang=lang,
+        additional_buttons=terminology_lang.buttons.__dict__,
     )
 
     await callback.message.edit_text(
-        text=terminology_lang.terms.locations_list,
+        text=terminology_lang.terms.locations_list.format(
+            company_name=data['company_name']
+        ),
         reply_markup=keyboard
     )
 
@@ -168,7 +174,6 @@ async def back(
 async def forward(
     callback: CallbackQuery,
     state: FSMContext,
-    company: CompanyReprSchema,
     lang: str
 ):
     state_handler = f'{router_state.state}:forward'
@@ -185,11 +190,14 @@ async def forward(
         callback_prefix=callback_prefix,
         side_index=side_index,
         back=False,
-        lang=lang
+        lang=lang,
+        additional_buttons=terminology_lang.buttons.__dict__,
     )
 
     await callback.message.edit_text(
-        text=terminology_lang.terms.locations_list,
+        text=terminology_lang.terms.locations_list.format(
+            company_name=data['company_name']
+        ),
         reply_markup=keyboard
     )
 
@@ -228,5 +236,5 @@ async def to_manage(
 
     await manage(
         message=callback.message, lang=lang,
-        state=state, location=location, edit_text=True
+        state=state, item=location, edit_text=True
     )

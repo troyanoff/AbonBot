@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from aiogram import Router
@@ -28,7 +29,9 @@ async def deadlock_msg(
         )
         await state.set_state(FSMStart.start)
         return
-    await message.answer(text=core_term_lang.terms.deadlock)
+    msg = await message.answer(text=core_term_lang.terms.deadlock)
+    await asyncio.sleep(1.5)
+    await msg.delete()
 
 
 @router.callback_query()
@@ -45,7 +48,9 @@ async def deadlock_callback(
         )
         await state.set_state(FSMStart.start)
         return
-    await callback.message.answer(text=core_term_lang.terms.deadlock)
+    msg = await callback.message.answer(text=core_term_lang.terms.deadlock)
+    await asyncio.sleep(1.5)
+    await msg.delete()
 
 
 @router.error()

@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    not_locations: str = (
-        'У этой компании пока нет локаций'
-        '\n\n'
-        'Чтобы создать локацию, выберете "Создать локацию"'
+    done: str = (
+        'Локация успешно обновлена ✅'
     )
-    locations_list: str = (
-        'Список локаций компании {company_name}'
+    error: str = (
+        'Видимо вы ввели некорректные данные, попробуйте еще раз ✏️'
+        '\n\n'
+        'Таймзона может быть в диапазоне от -12 до 14 ❗️'
     )
 
 
@@ -20,7 +20,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    create: str = 'Создать локацию'
+    pass
 
 
 @dataclass

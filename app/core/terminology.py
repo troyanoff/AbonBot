@@ -42,6 +42,7 @@ class ButtonCategoryRU:
     general: str = 'На главную'
     back: str = '⬅️'
     forward: str = '➡️'
+    back_state: str = 'Назад'
 
     async def get_dict_with(self, *keys) -> dict:
         return {key: getattr(self, key) for key in keys}

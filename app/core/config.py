@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     tg_media_id_len: int = 100
     tg_media_unique_id_len: int = 20
 
+    unanswer_callbacks: tuple = (
+        'create',
+    )
+
     async def is_debag(self):
         return self.debag.lower() == 'true'
 

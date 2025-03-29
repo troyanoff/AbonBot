@@ -97,7 +97,8 @@ async def create_offset_inline_kb(
     callback_prefix: str,
     side_index: int,
     back: bool,
-    lang: str
+    lang: str,
+    additional_buttons: dict = {}
 ) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     kb_buttons: list[InlineKeyboardButton] = []
@@ -129,6 +130,18 @@ async def create_offset_inline_kb(
             ),
             width=2
         )
+
+    if additional_buttons:
+        add_butt = []
+        for k, v in additional_buttons.items():
+            add_butt.append(
+                InlineKeyboardButton(
+                    text=v,
+                    callback_data=k
+                )
+            )
+        kb_builder.row(*add_butt, width=1)
+
     kb_builder.row(
         InlineKeyboardButton(
             text=core_term_lang.buttons.general,

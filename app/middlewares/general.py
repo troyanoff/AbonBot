@@ -22,7 +22,8 @@ class CallbackAnswerMiddleware(BaseMiddleware):
         data: Dict[str, Any]
     ) -> Any:
         logger.info('Отвечаем на колбэк')
-        await event.answer()
+        if event.data not in st.unanswer_callbacks:
+            await event.answer()
 
         # if settings.callback_sep in event.data:
         #     callback_time = int(event.data.split(':')[1])
