@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     unanswer_callbacks: tuple = (
         'create',
+        'create_company',
     )
 
     async def is_debag(self):

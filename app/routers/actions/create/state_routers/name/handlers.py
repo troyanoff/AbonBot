@@ -8,58 +8,28 @@ from aiogram.types import Message, CallbackQuery
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import create_simply_inline_kb
-from schemas.representations import LocationListSchema
-from schemas.utils import FailSchema
-from services.locations import get_location_service
-from routers.locations.create.state import FSMLocationCreate
-from routers.default.state import FSMDefault
+from routers.actions.create.state import states_group
 from .terminology import terminology, Lang
 
 
 logger = logging.getLogger(__name__)
 
 router = Router()
-router_group = FSMLocationCreate
-router_state = router_group.name
-next_state = router_group.description
+router_state = states_group.name
+next_state = states_group.description
 
 
-async def start_create(
-    callback: CallbackQuery, state: FSMContext, lang: str,
-    # client_data: ClientReprSchema
+async def start(
+    callback: CallbackQuery, state: FSMContext, lang: str
 ):
-    state_handler = f'{router_state.state}:start_create'
+    state_handler = f'{router_state.state}:start'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
     data = await state.get_data()
 
-    service = get_location_service()
-    locations: LocationListSchema = await service.get_list(
-        data['company_uuid']
-    )
-    if await st.is_debag():
-        logger.info(f'\n{'=' * 80}\n{locations=}\n{'=' * 80}')
-    terminology_lang: Lang = getattr(terminology, lang)
-
-    if isinstance(locations, FailSchema):
-        core_term_lang: core_Lang = getattr(core_term, lang)
-        await callback.message.answer(
-            text=core_term_lang.terms.error
-        )
-        await state.clear()
-        await state.set_state(FSMDefault.default)
-        return
-
-    if locations.total_count > 0:
-        await callback.answer(
-            text=terminology_lang.terms.forbitten,
-            show_alert=True
-        )
-        return
-
     await callback.answer()
     await state.update_data(
-        new_location={
+        new_action={
             'company_uuid': data['company_uuid']
         }
     )
@@ -68,7 +38,7 @@ async def start_create(
     core_term_lang: core_Lang = getattr(core_term, lang)
 
     core_buttons = await core_term_lang.buttons.get_dict_with(
-        *router_group.core_buttons)
+        *states_group.core_buttons)
 
     keyboard = await create_simply_inline_kb(
         core_buttons,
@@ -78,7 +48,7 @@ async def start_create(
         text=terminology_lang.terms.start_create,
         reply_markup=keyboard
     )
-    await state.set_state(router_group.name)
+    await state.set_state(states_group.name)
 
 
 @router.message(
@@ -92,10 +62,10 @@ async def done(
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
     data = await state.get_data()
-    new_location_dict = data['new_location']
-    new_location_dict['name'] = message.text
+    new_action_dict = data['new_action']
+    new_action_dict['name'] = message.text
     await state.update_data(
-        new_location=new_location_dict
+        new_action=new_action_dict
     )
 
     if await st.is_debag():
@@ -106,7 +76,7 @@ async def done(
     core_term_lang: core_Lang = getattr(core_term, lang)
 
     core_buttons = await core_term_lang.buttons.get_dict_with(
-        *router_group.core_buttons)
+        *states_group.core_buttons)
 
     keyboard = await create_simply_inline_kb(
         core_buttons,
@@ -132,7 +102,7 @@ async def error(
     core_term_lang: core_Lang = getattr(core_term, lang)
 
     core_buttons = await core_term_lang.buttons.get_dict_with(
-        *router_group.core_buttons)
+        *states_group.core_buttons)
 
     keyboard = await create_simply_inline_kb(
         core_buttons,

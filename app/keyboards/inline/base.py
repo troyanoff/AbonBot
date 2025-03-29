@@ -149,3 +149,52 @@ async def create_offset_inline_kb(
         )
     )
     return kb_builder.as_markup()
+
+
+async def pages_inline_kb(
+    data: list[dict],
+    callback_prefix: str,
+    page: int,
+    total_count: int,
+    lang: str,
+    additional_buttons: dict = {}
+) -> InlineKeyboardMarkup:
+    kb_builder = InlineKeyboardBuilder()
+    kb_buttons: list[InlineKeyboardButton] = []
+    for item in data:
+        kb_buttons.append(InlineKeyboardButton(
+            text=f'{item['num']} {item['name']}',
+            callback_data=f'{callback_prefix}:{item['uuid']}'))
+    kb_builder.row(*kb_buttons, width=1)
+    core_term_lang: core_Lang = getattr(core_term, lang)
+    if total_count > st.default_limit_keyboard_page:
+        kb_builder.row(
+            InlineKeyboardButton(
+                text=core_term_lang.buttons.back,
+                callback_data=f'back:{total_count}:{page}'
+            ),
+            InlineKeyboardButton(
+                text=core_term_lang.buttons.forward,
+                callback_data=f'forward:{total_count}:{page}'
+            ),
+            width=2
+        )
+
+    if additional_buttons:
+        add_butt = []
+        for k, v in additional_buttons.items():
+            add_butt.append(
+                InlineKeyboardButton(
+                    text=v,
+                    callback_data=k
+                )
+            )
+        kb_builder.row(*add_butt, width=1)
+
+    kb_builder.row(
+        InlineKeyboardButton(
+            text=core_term_lang.buttons.back_state,
+            callback_data='back_state'
+        )
+    )
+    return kb_builder.as_markup()

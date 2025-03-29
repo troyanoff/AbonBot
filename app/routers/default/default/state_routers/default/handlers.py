@@ -1,7 +1,7 @@
 import logging
 
 from aiogram import Router, F, Bot
-from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
@@ -17,9 +17,6 @@ from schemas.utils import FailSchema
 from routers.clients.update.state import FSMClientUpdate
 from routers.default.state import FSMDefault
 from routers.companies.create.state_routers.name.handlers import start_create
-from routers.companies.representation.state import FSMCompanyRepr
-from routers.companies.representation.state_routers.repr.handlers import \
-    companies_repr
 from .terminology import terminology, Lang
 
 
@@ -55,80 +52,6 @@ async def start(
 
     await message.answer(
         text=terminology_lang.terms.start
-    )
-
-
-@router.message(Command(commands='companies'), StateFilter(FSMDefault.default))
-async def companies_command(
-    message: Message,
-    lang: str,
-    client_data: ClientReprSchema,
-    state: FSMContext,
-):
-    await state.set_state(FSMCompanyRepr.repr)
-    await companies_repr(
-        message=message, client_data=client_data, state=state, lang=lang)
-
-
-@router.message(Command(commands='learn'), StateFilter(router_state))
-async def learn(
-    message: Message,
-    lang: str
-):
-    state_handler = f'{router_state.state}:learn'
-    logger.info(state_handler)
-    terminology_lang: Lang = getattr(terminology, lang)
-    await message.answer(
-        text=terminology_lang.terms.learn
-    )
-
-
-@router.message(Command(commands='support'), StateFilter(router_state))
-async def support(
-    message: Message,
-    lang: str
-):
-    state_handler = f'{router_state.state}:support'
-    logger.info(state_handler)
-    terminology_lang: Lang = getattr(terminology, lang)
-    await message.answer(
-        text=terminology_lang.terms.support
-    )
-
-
-@router.message(Command(commands='profile'), StateFilter(router_state))
-async def profile(
-    message: Message,
-    lang: str,
-    client_data: ClientReprSchema
-):
-    state_handler = f'{router_state.state}:profile'
-    logger.info(state_handler)
-
-    terminology_lang: Lang = getattr(terminology, lang)
-    core_term_lang: core_Lang = getattr(core_term, lang)
-    keyboard = await create_simply_inline_kb(
-        buttons=terminology_lang.buttons.__dict__,
-        width=1
-    )
-    sex = getattr(core_term_lang.terms, client_data.sex.name)
-    text = terminology_lang.terms.profile.format(
-        first_name=client_data.first_name,
-        last_name=client_data.last_name,
-        sex=sex,
-        companies_count=0,  # to do
-        subs_count=0  # to do
-    )
-    if not client_data.photo_id:
-        await message.answer(
-            text=text,
-            reply_markup=keyboard
-        )
-        return
-    await message.answer_photo(
-        photo=client_data.photo_id,
-        caption=text,
-        reply_markup=keyboard
     )
 
 
@@ -190,8 +113,9 @@ async def create_company(
 
     if companies.total_count > 0 and not client_data.is_premium:
         terminology_lang: Lang = getattr(terminology, lang)
-        await callback.message.answer(
-            text=terminology_lang.terms.max_companies
+        await callback.answer(
+            text=terminology_lang.terms.max_companies,
+            show_alert=True
         )
         return
 

@@ -45,3 +45,20 @@ async def locations(
     state_handler = f'{router_state.state}:locations'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
     await locations_repr(message=callback.message, lang=lang, state=state)
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data == 'actions'
+)
+async def actions(
+    callback: CallbackQuery,
+    state: FSMContext,
+    lang: str
+):
+    from routers.actions.representation.state_routers.repr.handlers \
+        import start
+    state_handler = f'{router_state.state}:actions'
+    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+
+    await start(message=callback.message, lang=lang, state=state)
