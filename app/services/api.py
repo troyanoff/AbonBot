@@ -116,7 +116,7 @@ class APIService:
         params: dict = {},
         data: str = None,
         timeout: int = 20
-    ) -> ResponseShema:
+    ) -> DoneSchema | FailSchema:
         """GET request."""
         url = self.base_url + path
         headers = await self._get_headers()

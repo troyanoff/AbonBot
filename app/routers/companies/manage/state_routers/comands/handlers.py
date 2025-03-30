@@ -62,3 +62,20 @@ async def actions(
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
     await start(callback=callback, lang=lang, state=state)
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data == 'subscriptions'
+)
+async def subscriptions(
+    callback: CallbackQuery,
+    state: FSMContext,
+    lang: str
+):
+    from routers.subscriptions.representation_company.state_routers.repr.\
+        handlers import start
+    state_handler = f'{router_state.state}:subscriptions'
+    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+
+    await start(message=callback.message, lang=lang, state=state)

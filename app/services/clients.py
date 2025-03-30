@@ -78,9 +78,11 @@ class ClientService(BaseService):
                 params=params
             )
             if isinstance(result, (FailSchema, ExceptSchema)):
+                if isinstance(result, FailSchema):
+                    return result
                 logger.error(
                     f'Возникла ошибка: {pformat(result.model_dump())}')
-                return None
+                return FailSchema()
             data = result.response.data
             logger.info('Кладем объект в кэш')
             await self.cache.set(self.cache_prefix, tg_id, data)
