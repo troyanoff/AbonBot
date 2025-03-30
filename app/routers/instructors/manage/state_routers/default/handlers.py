@@ -10,19 +10,18 @@ from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import (
     create_simply_inline_kb
 )
-from schemas.base import SubRoleEnum
 from schemas.representations import (
-    SubscriptionReprSchema
+    InstructorReprSchema
 )
 from services.companies import get_company_service
-from routers.subscriptions.manage_company.state import states_group
+from routers.instructors.manage.state import states_group
 from .terminology import terminology, Lang
+from .utils import archive
 
 
 logger = logging.getLogger(__name__)
 
 router = Router()
-router_group = states_group
 router_state = states_group.manage
 
 
@@ -30,7 +29,7 @@ async def manage(
     message: Message,
     lang: str,
     state: FSMContext,
-    item: SubscriptionReprSchema,
+    item: InstructorReprSchema,
     edit_text: bool = False
 ):
     state_handler = f'{router_state.state}:manage'
@@ -38,19 +37,15 @@ async def manage(
     await state.set_state(router_state)
 
     await state.update_data(
-        subscription_uuid=item.uuid
+        instructor_uuid=item.uuid
     )
 
     terminology_lang: Lang = getattr(terminology, lang)
     core_term_lang: core_Lang = getattr(core_term, lang)
 
     buttons = terminology_lang.buttons.__dict__
-
-    if item.role == SubRoleEnum.instructor:
-        buttons.pop('add_instructor', None)
-
     core_buttons = await core_term_lang.buttons.get_dict_with(
-        *router_group.core_buttons)
+        *states_group.core_buttons)
     buttons.update(core_buttons)
 
     keyboard = await create_simply_inline_kb(
@@ -61,10 +56,10 @@ async def manage(
     text = terminology_lang.terms.manage.format(
         first_name=item.client.first_name,
         last_name=item.client.last_name,
-        sex=sex,
+        sex=sex
     )
     if edit_text:
-        photo = item.client.photo_id
+        photo = item.photo_id
         if not photo:
             photo = st.stug_photo
 
@@ -87,7 +82,7 @@ async def manage(
         )
         return
     else:
-        photo = item.client.photo_id
+        photo = item.photo_id
         if not photo:
             photo = st.stug_photo
         await message.answer_photo(
@@ -99,67 +94,36 @@ async def manage(
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'issuance'
+    F.data == 'archive'
 )
-async def issuance(
+async def archive_callback(
     callback: CallbackQuery,
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:issuance'
+    state_handler = f'{router_state.state}:archive'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    # from routers.locations.update.state_routers.name.handlers \
-    #     import start
-    # await start(
-    #     message=callback.message, state=state, lang=lang
-    # )
-
-
-@router.callback_query(
-    StateFilter(router_state),
-    F.data == 'create'
-)
-async def create(
-    callback: CallbackQuery,
-    state: FSMContext,
-    lang: str
-):
-    state_handler = f'{router_state.state}:create'
-    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
-
-    data = await state.get_data()
-    if await st.is_debag():
-        logger.info(f'\n{'=' * 80}\n{data=}\n{'=' * 80}')
-
-    from routers.subscriptions.create.state_routers.client.handlers \
-        import start
-    await start(
+    await archive(
         callback=callback, state=state, lang=lang
     )
 
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'add_instructor'
+    F.data == 'update'
 )
-async def add_instructor(
+async def update(
     callback: CallbackQuery,
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:add_instructor'
+    state_handler = f'{router_state.state}:update'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    if await st.is_debag():
-        data = await state.get_data()
-        logger.info(f'\n{'=' * 80}\n{data=}\n{'=' * 80}')
-
-    from routers.instructors.create.state_routers.photo.handlers \
+    from routers.instructors.update.state_routers.photo.handlers \
         import start
-    await start(
-        callback=callback, state=state, lang=lang
-    )
+    await start(callback=callback, state=state, lang=lang)
 
 
 @router.callback_query(

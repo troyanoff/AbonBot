@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import (
-    CallbackQuery, InputMediaPhoto, Message
+    CallbackQuery, InputMediaPhoto
 )
 
 from core.config import settings as st
@@ -13,15 +13,14 @@ from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import (
     create_simply_inline_kb, pages_inline_kb
 )
-from routers.subscriptions.manage_company.state_routers.default.handlers \
-    import manage
-from services.subscriptions import get_subscription_service
+from routers.instructors.manage.state_routers.default.handlers import manage
+from services.instructors import get_instructor_service
 from services.companies import get_company_service
-from routers.subscriptions.representation_company.state import states_group
+from routers.instructors.representation.state import states_group
 from schemas.utils import FailSchema
 from schemas.representations import (
-    SubscriptionReprSchema,
-    SubscriptionListSchema
+    InstructorReprSchema,
+    InstructorListSchema
 )
 from .terminology import terminology, Lang
 from .utils import create_page
@@ -31,11 +30,11 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 router_state = states_group.repr
-callback_prefix = 'subscription'
+callback_prefix = 'instructor'
 
 
 async def start(
-    message: Message,
+    callback: CallbackQuery,
     lang: str,
     state: FSMContext,
 ):
@@ -46,13 +45,16 @@ async def start(
     data = await state.get_data()
     company_uuid = data['company_uuid']
 
-    service = get_subscription_service()
-    items: SubscriptionListSchema = await service.get_list(
+    service = get_instructor_service()
+    instructors: InstructorListSchema = await service.get_list(
         company_uuid)
 
+    if await st.is_debag():
+        logger.info(f'{instructors=}')
+
     core_term_lang: core_Lang = getattr(core_term, lang)
-    if isinstance(items, FailSchema):
-        await message.answer(
+    if isinstance(instructors, FailSchema):
+        await callback.message.answer(
             text=core_term_lang.terms.error
         )
         await state.clear()
@@ -60,7 +62,7 @@ async def start(
         return
 
     terminology_lang: Lang = getattr(terminology, lang)
-    if not items.total_count:
+    if not instructors.total_count:
         buttons = terminology_lang.buttons.__dict__
         core_buttons = await core_term_lang.buttons.get_dict_with(
             *states_group.core_buttons)
@@ -70,47 +72,36 @@ async def start(
             buttons,
             1
         )
-        if not message.photo:
-            await message.answer_photo(
-                photo=st.stug_photo,
-                caption=terminology_lang.terms.not_items,
-                reply_markup=keyboard
-            )
-            return
-        await message.edit_media(
-            media=InputMediaPhoto(
-                media=st.stug_photo,
-                caption=terminology_lang.terms.not_items
-            ),
+        await callback.message.answer_photo(
+            photo=st.stug_photo,
+            caption=terminology_lang.terms.not_items,
             reply_markup=keyboard
+        )
+        return
+
+    if instructors.total_count == 1:
+        await manage(
+            message=callback.message, lang=lang, state=state,
+            item=instructors.items[0], edit_text=True
         )
         return
 
     data_pages, page = await create_page(
         company_uuid=company_uuid,
         lang=lang,
-        message=message,
+        message=callback.message,
         state=state,
     )
     keyboard = await pages_inline_kb(
         data=data_pages,
         callback_prefix=callback_prefix,
         page=page,
-        total_count=items.total_count,
+        total_count=instructors.total_count,
         lang=lang,
         additional_buttons=terminology_lang.buttons.__dict__
     )
 
-    if not message.photo:
-        await message.answer_photo(
-            photo=st.stug_photo,
-            caption=terminology_lang.terms.list_items.format(
-                company_name=data['company_name']
-            ),
-            reply_markup=keyboard
-        )
-        return
-    await message.edit_media(
+    await callback.message.edit_media(
         media=InputMediaPhoto(
             media=st.stug_photo,
             caption=terminology_lang.terms.list_items.format(
@@ -119,24 +110,6 @@ async def start(
         ),
         reply_markup=keyboard
     )
-
-
-@router.callback_query(
-    StateFilter(router_state),
-    F.data == 'create'
-)
-async def create(
-    callback: CallbackQuery,
-    state: FSMContext,
-    lang: str
-):
-    state_handler = f'{router_state.state}:create'
-    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
-
-    from routers.subscriptions.create.state_routers.client.handlers\
-        import start
-
-    await start(callback=callback, state=state, lang=lang)
 
 
 @router.callback_query(
@@ -275,11 +248,9 @@ async def to_manage(
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
     uuid = callback.data.split(':')[-1]
-    service = get_subscription_service()
-    item: SubscriptionReprSchema = await service.get(
+    service = get_instructor_service()
+    item: InstructorReprSchema = await service.get(
         uuid=uuid)
-
-    await state.update_data(sub_client_uuid=item.client.uuid)
 
     if isinstance(item, FailSchema):
         core_term_lang: core_Lang = getattr(core_term, lang)
