@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import (
-    Message, CallbackQuery
+    CallbackQuery, InputMediaPhoto
 )
 
 from core.config import settings as st
@@ -34,7 +34,7 @@ callback_prefix = 'action'
 
 
 async def start(
-    message: Message,
+    callback: CallbackQuery,
     lang: str,
     state: FSMContext,
 ):
@@ -54,7 +54,7 @@ async def start(
 
     core_term_lang: core_Lang = getattr(core_term, lang)
     if isinstance(actions, FailSchema):
-        await message.answer(
+        await callback.message.answer(
             text=core_term_lang.terms.error
         )
         await state.clear()
@@ -72,15 +72,16 @@ async def start(
             buttons,
             1
         )
-        await message.answer(
-            text=terminology_lang.terms.not_items,
+        await callback.message.answer_photo(
+            photo=st.stug_photo,
+            caption=terminology_lang.terms.not_items,
             reply_markup=keyboard
         )
         return
 
     if actions.total_count == 1:
         await manage(
-            message=message, lang=lang, state=state,
+            message=callback.message, lang=lang, state=state,
             item=actions.items[0], edit_text=True
         )
         return
@@ -88,7 +89,7 @@ async def start(
     data_pages, page = await create_page(
         company_uuid=company_uuid,
         lang=lang,
-        message=message,
+        message=callback.message,
         state=state,
     )
     keyboard = await pages_inline_kb(
@@ -100,9 +101,12 @@ async def start(
         additional_buttons=terminology_lang.buttons.__dict__
     )
 
-    await message.answer(
-        text=terminology_lang.terms.list_items.format(
-            company_name=data['company_name']
+    await callback.message.edit_media(
+        media=InputMediaPhoto(
+            media=st.stug_photo,
+            caption=terminology_lang.terms.list_items.format(
+                company_name=data['company_name']
+            )
         ),
         reply_markup=keyboard
     )
@@ -188,8 +192,8 @@ async def back(
         additional_buttons=terminology_lang.buttons.__dict__,
     )
 
-    await callback.message.edit_text(
-        text=terminology_lang.terms.list_items.format(
+    await callback.message.edit_caption(
+        caption=terminology_lang.terms.list_items.format(
             company_name=data['company_name']
         ),
         reply_markup=keyboard
@@ -236,8 +240,8 @@ async def forward(
         additional_buttons=terminology_lang.buttons.__dict__,
     )
 
-    await callback.message.edit_text(
-        text=terminology_lang.terms.list_items.format(
+    await callback.message.edit_caption(
+        caption=terminology_lang.terms.list_items.format(
             company_name=data['company_name']
         ),
         reply_markup=keyboard

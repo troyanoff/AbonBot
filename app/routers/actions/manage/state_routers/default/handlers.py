@@ -16,6 +16,7 @@ from schemas.representations import (
 from services.companies import get_company_service
 from routers.actions.manage.state import states_group
 from .terminology import terminology, Lang
+from .utils import archive
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ async def manage(
     await state.set_state(router_state)
 
     await state.update_data(
-        location_uuid=item.uuid
+        action_uuid=item.uuid
     )
 
     terminology_lang: Lang = getattr(terminology, lang)
@@ -56,22 +57,13 @@ async def manage(
         description=item.description,
     )
     if edit_text:
-        if not item.photo_id:
-            if message.photo:
-                await message.delete()
-                await message.answer(
-                    text=text,
-                    reply_markup=keyboard
-                )
-                return
-            await message.edit_text(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = item.photo_id
+        if not photo:
+            photo = st.stug_photo
+
         if message.photo:
             media = InputMediaPhoto(
-                media=item.photo_id,
+                media=photo,
                 caption=text
             )
             await message.edit_media(
@@ -79,21 +71,20 @@ async def manage(
                 reply_markup=keyboard
             )
             return
+
         await message.delete()
         await message.answer_photo(
-            photo=item.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )
+        return
     else:
-        if not item.photo_id:
-            await message.answer(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = item.photo_id
+        if not photo:
+            photo = st.stug_photo
         await message.answer_photo(
-            photo=item.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )
@@ -101,20 +92,18 @@ async def manage(
 
 @router.callback_query(
     StateFilter(router_state),
-    F.data == 'update'
+    F.data == 'archive'
 )
 async def update(
     callback: CallbackQuery,
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:update'
+    state_handler = f'{router_state.state}:archive'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    from routers.locations.update.state_routers.name.handlers \
-        import start
-    await start(
-        message=callback.message, state=state, lang=lang
+    await archive(
+        callback=callback, state=state, lang=lang
     )
 
 

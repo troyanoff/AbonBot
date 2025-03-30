@@ -8,6 +8,7 @@ class TermCategoryRU:
         '\n\n'
         '{description}'
     )
+    archived: str = 'Тренировка успешно архивирована 📦'
 
 
 @dataclass
@@ -17,7 +18,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    update: str = 'Изменить тренировку'
+    archive: str = 'Архивировать тренировку'
     create: str = 'Новая тренировка'
 
 

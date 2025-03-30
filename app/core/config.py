@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     unanswer_callbacks: tuple = (
         'create',
         'create_company',
+        'archive',
+    )
+
+    stug_photo: str = (
+        'AgACAgIAAxkBAAIJz2fpMa_yISxiHsqRi9pImH8hwQPrAALr6jEbg_xJS4LDull'
+        '8I6AVAQADAgADeQADNgQ'
     )
 
     async def is_debag(self):

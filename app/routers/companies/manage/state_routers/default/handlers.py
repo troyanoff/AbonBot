@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 
-# from core.config import settings as st
+from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import (
     create_simply_inline_kb
@@ -56,22 +56,13 @@ async def manage(
         max_hour_cancel=company.max_hour_cancel,
     )
     if edit_text:
-        if not company.photo_id:
-            if message.photo:
-                await message.delete()
-                await message.answer(
-                    text=text,
-                    reply_markup=keyboard
-                )
-                return
-            await message.edit_text(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = company.photo_id
+        if not photo:
+            photo = st.stug_photo
+
         if message.photo:
             media = InputMediaPhoto(
-                media=company.photo_id,
+                media=photo,
                 caption=text
             )
             await message.edit_media(
@@ -79,21 +70,20 @@ async def manage(
                 reply_markup=keyboard
             )
             return
+
         await message.delete()
         await message.answer_photo(
-            photo=company.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )
+        return
     else:
-        if not company.photo_id:
-            await message.answer(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = company.photo_id
+        if not photo:
+            photo = st.stug_photo
         await message.answer_photo(
-            photo=company.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )

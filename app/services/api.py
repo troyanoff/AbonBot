@@ -205,6 +205,36 @@ class APIService:
             response=ResponseShema(status=status, data=response)
         )
 
+    @safe_exec_api
+    async def delete(
+        self,
+        path: str,
+        params: dict = {},
+        timeout: int = 20
+    ) -> ResponseShema:
+        """DELETE request."""
+        url = self.base_url + path
+        headers = await self._get_headers()
+        timeout = aiohttp.ClientTimeout(total=timeout)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.delete(
+                url=url,
+                headers=headers,
+                params=params
+            ) as response:
+                status = response.status
+                try:
+                    response = await response.json()
+                except Exception:
+                    response = await response.text()
+        if 200 <= status < 300:
+            return DoneSchema(
+                response=ResponseShema(status=status, data=response)
+            )
+        return FailSchema(
+            response=ResponseShema(status=status, data=response)
+        )
+
 
 @lru_cache()
 def get_api_service() -> APIService:

@@ -61,4 +61,4 @@ async def actions(
     state_handler = f'{router_state.state}:actions'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    await start(message=callback.message, lang=lang, state=state)
+    await start(callback=callback, lang=lang, state=state)

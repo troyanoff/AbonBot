@@ -104,6 +104,20 @@ class ActionService(BaseService):
         items = await self.list_conversion(data)
         return items
 
+    async def archive(self, uuid: str):
+        params = {
+            'uuid': uuid
+        }
+        result = await self.api.delete(
+            path=self.base_path + 'archive',
+            params=params
+        )
+        if isinstance(result, (FailSchema, ExceptSchema)):
+            logger.error(
+                f'Error: {pformat(result.model_dump())}')
+            return FailSchema()
+        return DoneSchema()
+
 
 @lru_cache()
 def get_action_service() -> ActionService:

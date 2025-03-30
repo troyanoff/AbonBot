@@ -61,22 +61,13 @@ async def manage(
         flat=item.flat,
     )
     if edit_text:
-        if not item.photo_id:
-            if message.photo:
-                await message.delete()
-                await message.answer(
-                    text=text,
-                    reply_markup=keyboard
-                )
-                return
-            await message.edit_text(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = item.photo_id
+        if not photo:
+            photo = st.stug_photo
+
         if message.photo:
             media = InputMediaPhoto(
-                media=item.photo_id,
+                media=photo,
                 caption=text
             )
             await message.edit_media(
@@ -84,21 +75,20 @@ async def manage(
                 reply_markup=keyboard
             )
             return
+
         await message.delete()
         await message.answer_photo(
-            photo=item.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )
+        return
     else:
-        if not item.photo_id:
-            await message.answer(
-                text=text,
-                reply_markup=keyboard
-            )
-            return
+        photo = item.photo_id
+        if not photo:
+            photo = st.stug_photo
         await message.answer_photo(
-            photo=item.photo_id,
+            photo=photo,
             caption=text,
             reply_markup=keyboard
         )
