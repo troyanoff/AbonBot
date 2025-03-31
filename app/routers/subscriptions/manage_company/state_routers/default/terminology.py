@@ -26,7 +26,6 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    issuance: str = 'Выдать абонемент'
     add_instructor: str = 'Назначить тренером'
     create: str = 'Новый клиент'
 

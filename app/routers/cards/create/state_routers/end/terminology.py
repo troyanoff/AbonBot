@@ -3,13 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    not_items: str = (
-        'У этой компании пока нет локаций'
-        '\n\n'
-        'Чтобы создать локацию, выберете "Создать локацию"'
-    )
-    list_items: str = (
-        'Список локаций компании {company_name}'
+    done: str = (
+        'Тренировка успешно создана ✅'
     )
 
 
@@ -20,7 +15,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    create: str = 'Создать локацию'
+    pass
 
 
 @dataclass

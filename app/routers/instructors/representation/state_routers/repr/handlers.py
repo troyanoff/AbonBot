@@ -15,7 +15,6 @@ from keyboards.inline.base import (
 )
 from routers.instructors.manage.state_routers.default.handlers import manage
 from services.instructors import get_instructor_service
-from services.companies import get_company_service
 from routers.instructors.representation.state import states_group
 from schemas.utils import FailSchema
 from schemas.representations import (
@@ -127,10 +126,9 @@ async def back_state(
     from routers.companies.manage.state_routers.default.handlers \
         import manage
     data = await state.get_data()
-    service = get_company_service()
-    company = await service.get(data['company_uuid'])
     await manage(
-        message=callback.message, state=state, lang=lang, company=company,
+        message=callback.message, state=state, lang=lang,
+        uuid=data['company_uuid'],
         edit_text=True
     )
 

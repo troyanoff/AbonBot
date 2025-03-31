@@ -41,10 +41,10 @@ async def locations(
     lang: str
 ):
     from routers.locations.representation.state_routers.repr.handlers \
-        import locations_repr
+        import repr_items
     state_handler = f'{router_state.state}:locations'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
-    await locations_repr(message=callback.message, lang=lang, state=state)
+    await repr_items.repr(callback=callback, lang=lang, state=state)
 
 
 @router.callback_query(
@@ -96,3 +96,20 @@ async def instructors(
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
     await start(callback=callback, lang=lang, state=state)
+
+
+@router.callback_query(
+    StateFilter(router_state),
+    F.data == 'cards'
+)
+async def cards(
+    callback: CallbackQuery,
+    state: FSMContext,
+    lang: str
+):
+    from routers.cards.representation.state_routers.repr.\
+        handlers import repr_items
+    state_handler = f'{router_state.state}:cards'
+    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+
+    await repr_items.repr(callback=callback, lang=lang, state=state)

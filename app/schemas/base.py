@@ -64,3 +64,9 @@ class SubRoleEnum(str, Enum):
     staff = 'staff'
     instructor = 'instructor'
     client = 'client'
+
+
+class CreateFieldEnum(str, Enum):
+    start = 'start'
+    default = 'default'
+    end = 'end'

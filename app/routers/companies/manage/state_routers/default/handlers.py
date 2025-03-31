@@ -11,6 +11,7 @@ from keyboards.inline.base import (
     create_simply_inline_kb
 )
 from schemas.representations import ClientReprSchema, CompanyReprSchema
+from services.companies import get_company_service
 from routers.companies.manage.state import FSMCompanyManage
 from .terminology import terminology, Lang
 
@@ -25,12 +26,20 @@ async def manage(
     message: Message,
     lang: str,
     state: FSMContext,
-    company: CompanyReprSchema,
+    company: CompanyReprSchema = None,
+    uuid: str = None,
     edit_text: bool = False
 ):
     state_handler = f'{router_state.state}:manage'
     logger.info(state_handler)
     await state.set_state(router_state)
+
+    if not company and not uuid:
+        raise Exception()
+
+    if not company:
+        service = get_company_service()
+        company = await service.get(uuid)
 
     await state.update_data(
         company_uuid=company.uuid,

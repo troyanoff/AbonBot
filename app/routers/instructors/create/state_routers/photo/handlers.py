@@ -8,7 +8,6 @@ from aiogram.types import Message, CallbackQuery, PhotoSize
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import create_simply_inline_kb
-from services.companies import get_company_service
 from routers.instructors.create.state import states_group
 from .terminology import terminology, Lang
 from ..end.handlers import end_create
@@ -68,10 +67,9 @@ async def back_state(
     from routers.companies.manage.state_routers.default.handlers \
         import manage
     data = await state.get_data()
-    service = get_company_service()
-    company = await service.get(data['company_uuid'])
     await manage(
-        message=callback.message, state=state, lang=lang, company=company,
+        message=callback.message, state=state, lang=lang,
+        uuid=data['company_uuid'],
         edit_text=True
     )
 

@@ -50,6 +50,8 @@ class Settings(BaseSettings):
         '8I6AVAQADAgADeQADNgQ'
     )
 
+    state_sep: str = ':'
+
     async def is_debag(self):
         return self.debag.lower() == 'true'
 

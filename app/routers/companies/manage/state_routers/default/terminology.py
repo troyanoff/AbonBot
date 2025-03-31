@@ -38,7 +38,7 @@ class ButtonCategoryRU:
     locations: str = 'Локации 🏠'
     actions: str = 'Тренировки ⛷'
     instructors: str = 'Инструкторы 🙋‍♀️'
-    abonnements: str = 'Абонементы 📜'
+    cards: str = 'Абонементы 📜'
     subscriptions: str = 'Клиенты 💰'
     update_company: str = 'Изменить данные компании'
 

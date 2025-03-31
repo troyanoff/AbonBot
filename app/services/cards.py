@@ -6,11 +6,13 @@ from core.config import settings as st
 from services.api import APIService, get_api_service
 from services.base import BaseService
 from services.cache import Cache, get_cache_service
-from schemas.locations import LocationCreateSchema, LocationUpdateSchema
+from schemas.cards import (
+    CardCreateSchema, CardUpdateSchema
+)
 from schemas.representations import (
     ClientReprSchema,
-    LocationReprSchema,
-    LocationListSchema
+    CardReprSchema,
+    CardListSchema,
 )
 from schemas.utils import DoneSchema, FailSchema, ExceptSchema
 from pprint import pformat
@@ -19,33 +21,33 @@ from pprint import pformat
 logger = logging.getLogger(__name__)
 
 
-class LocationService(BaseService):
-    base_path: str = 'locations/'
-    cache_prefix: str = 'locations'
+class CardService(BaseService):
+    base_path: str = 'cards/'
+    cache_prefix: str = 'cards'
 
     def __init__(self, api: APIService, cache: Cache):
         self.api = api
         self.cache = cache
 
-    async def _conversion(self, item: dict) -> LocationReprSchema:
-        result = LocationReprSchema(**item)
+    async def _conversion(self, item: dict) -> CardReprSchema:
+        result = CardReprSchema(**item)
         return result
 
-    async def list_conversion(self, items: dict) -> LocationListSchema:
-        result = LocationListSchema(**items)
+    async def list_conversion(self, items: dict) -> CardListSchema:
+        result = CardListSchema(**items)
         return result
 
-    async def create(self, location: LocationCreateSchema):
-        data = location.model_dump_json()
+    async def create(self, card: CardCreateSchema):
+        data = card.model_dump_json()
         response = await self.api.post(
             path=self.base_path, data=data
         )
-        logger.info(f'location create {response=}')
+        logger.info(f'card create {response=}')
         if isinstance(response, (FailSchema, ExceptSchema)):
             return FailSchema()
         return response
 
-    async def update(self, data: LocationUpdateSchema):
+    async def update(self, data: CardUpdateSchema):
         json_data = data.model_dump_json(exclude_unset=True)
         response = await self.api.patch(
             path=self.base_path, data=json_data
@@ -57,19 +59,22 @@ class LocationService(BaseService):
         await self.cache.delete(self.cache_prefix, data.uuid)
         return DoneSchema()
 
-    async def get(self, uuid: str) -> ClientReprSchema:
+    async def get(self, uuid: str = None, **kwargs) -> ClientReprSchema:
         data = await self.cache.get(self.cache_prefix, uuid)
         if not data:
-            params = {
-                'uuid': uuid
-            }
+            params = {}
+            if uuid:
+                params['uuid'] = uuid
+            params.update(kwargs)
             result = await self.api.get(
                 path=self.base_path + 'get',
                 params=params
             )
             if isinstance(result, (FailSchema, ExceptSchema)):
+                if isinstance(result, FailSchema):
+                    return result
                 logger.error(
-                    f'Error: {pformat(result.model_dump())}')
+                    f'Возникла ошибка: {pformat(result.model_dump())}')
                 return FailSchema()
             data = result.response.data
             logger.info('Set data to cache')
@@ -83,7 +88,7 @@ class LocationService(BaseService):
         limit: int = st.default_limit_keyboard_page,
         offset: int = 0,
         **kwargs
-    ) -> LocationListSchema:
+    ) -> CardListSchema:
         data = await self.cache.get(
             self.cache_prefix, f'{company_uuid=}:{limit=}:{offset=}:{kwargs=}'
         )
@@ -113,9 +118,23 @@ class LocationService(BaseService):
         items = await self.list_conversion(data)
         return items
 
+    async def archive(self, uuid: str):
+        params = {
+            'uuid': uuid
+        }
+        result = await self.api.delete(
+            path=self.base_path + 'archive',
+            params=params
+        )
+        if isinstance(result, (FailSchema, ExceptSchema)):
+            logger.error(
+                f'Error: {pformat(result.model_dump())}')
+            return FailSchema()
+        return DoneSchema()
+
 
 @lru_cache()
-def get_location_service() -> LocationService:
+def get_card_service() -> CardService:
     api = get_api_service()
     cache = get_cache_service()
-    return LocationService(api, cache)
+    return CardService(api, cache)
