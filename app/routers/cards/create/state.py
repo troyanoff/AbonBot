@@ -16,6 +16,8 @@ class FSMCardCreate(StatesGroup):
     freeze = State()
     freeze_callbacks = ('yes', 'no', )
     freezing_days = State()
+    location = State()
+    actions = State()
     core_buttons = ('cancel', )
     data_field = 'new_card'
 

@@ -143,7 +143,7 @@ class RerpBase:
         self,
         callback: CallbackQuery,
         lang: str,
-        state: FSMContext,
+        state: FSMContext
     ):
         state_handler = f'{self.router_state.state}:repr'
         self.logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
@@ -176,9 +176,11 @@ class RerpBase:
                 buttons,
                 1
             )
-            await callback.message.answer_photo(
-                photo=self.stug_photo,
-                caption=terminology_lang.terms.not_items,
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=self.stug_photo,
+                    caption=terminology_lang.terms.not_items
+                ),
                 reply_markup=keyboard
             )
             return

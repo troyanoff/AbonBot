@@ -127,7 +127,7 @@ async def create_company(
 
 @router.callback_query(
     ~StateFilter(default_state, router_state),
-    F.data.in_(('cancel', 'general'))
+    F.data.in_(('cancelRR', 'general'))
 )
 async def cancel(
     callback: CallbackQuery, state: FSMContext, lang: str

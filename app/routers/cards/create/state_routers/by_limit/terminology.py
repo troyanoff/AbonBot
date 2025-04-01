@@ -1,17 +1,18 @@
 from dataclasses import dataclass
 
-from core.config import settings as st
-
 
 @dataclass
 class TermCategoryRU:
-    done: str = (
-        'Этот абонемент будет выдаваться на определенный период? ⏱'
+    done_yes: str = (
+        'Введите час, до которого клиент сможет посетить тренировку'
+        '\n\n'
+        'Введите одно числом от 0 до 23 без лишних символов ❗️'
+    )
+    done_no: str = (
+        'Будет ли этот абонемент иметь возможность заморозки? ❄️'
     )
     error: str = (
-        'Видимо вы ввели некорректное описание, попробуйте еще раз ✏️'
-        '\n\n'
-        f'Оно не должно быть длиннее {st.long_field_len} символов ❗️'
+        'Просто нажмите одну из предоставленных кнопок'
     )
 
 
@@ -24,6 +25,9 @@ class TermCategoryEN(TermCategoryRU):
 class ButtonCategoryRU:
     yes: str = 'Да'
     no: str = 'Нет'
+
+    async def get_dict_with(self, *keys) -> dict:
+        return {key: getattr(self, key) for key in keys}
 
 
 @dataclass
