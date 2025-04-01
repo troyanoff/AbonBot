@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 
+from core.config import settings as st
 from core.items.menus import menu_ru, menu_en, menu_start_ru, menu_start_en
+
+
+@dataclass
+class PhotoCategoryRU:
+    default: str = st.stug_photo
+
+
+@dataclass
+class PhotoCategoryEN(PhotoCategoryRU):
+    pass
 
 
 @dataclass
@@ -59,6 +70,7 @@ class Lang:
     buttons: ButtonCategoryRU | ButtonCategoryEN
     menu: dict
     menu_start: dict
+    photos: PhotoCategoryRU | PhotoCategoryEN
 
 
 @dataclass
@@ -71,13 +83,15 @@ ru_lang = Lang(
     terms=TermCategoryRU(),
     buttons=ButtonCategoryRU(),
     menu=menu_ru,
-    menu_start=menu_start_ru
+    menu_start=menu_start_ru,
+    photos=PhotoCategoryRU()
 )
 en_lang = Lang(
     terms=TermCategoryEN(),
     buttons=ButtonCategoryEN(),
     menu=menu_en,
-    menu_start=menu_start_en
+    menu_start=menu_start_en,
+    photos=PhotoCategoryEN()
 )
 
 terminology = LangList(ru=ru_lang, en=en_lang)

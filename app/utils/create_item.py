@@ -8,6 +8,7 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardMarkup
 from logging import Logger
+from types import CoroutineType
 
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
@@ -29,6 +30,7 @@ class CreateConfig:
         last_buttons: tuple = None,
         last_term=None,
         next_state: State | tuple = None,
+        end_caller: CoroutineType = None
     ):
         self.router = router
         self.logger = logger
@@ -41,6 +43,7 @@ class CreateConfig:
         self.last_buttons = last_buttons
         self.last_term = last_term
         self.next_state = next_state
+        self.end_caller = end_caller
 
 
 class CreateField:
@@ -110,6 +113,22 @@ class CreateField:
 
         return keyboard
 
+    async def done_end(
+        self,
+        update: Message | CallbackQuery,
+        state: FSMContext,
+        lang: str
+    ):
+        terminology_lang = getattr(self.config.term, lang)
+
+        keyboard = await self.done_keyboard(lang)
+
+        await update.answer(
+            text=terminology_lang.terms.done,
+            reply_markup=keyboard
+        )
+        await state.set_state(self.config.next_state)
+
     async def start(
         self, callback: CallbackQuery, state: FSMContext, lang: str
     ):
@@ -155,15 +174,10 @@ class CreateField:
             data = await state.get_data()
             self.config.logger.info(f'{state_handler} {data=}')
 
-        terminology_lang = getattr(self.config.term, lang)
-
-        keyboard = await self.done_keyboard(lang)
-
-        await message.answer(
-            text=terminology_lang.terms.done,
-            reply_markup=keyboard
-        )
-        await state.set_state(self.config.next_state)
+        done_func = self.done_end
+        if self.config.end_caller:
+            done_func = self.config.end_caller
+        await done_func(message, state, lang)
 
     async def error(
         self, message: Message, lang: str
@@ -202,10 +216,12 @@ class CreateFieldBool(CreateField):
     def __init__(
         self,
         config: CreateConfig,
-        buttons: tuple[tuple, tuple]
+        buttons: tuple[tuple, tuple],
+        end_caller_callback: str = None
     ):
         self.config = config
         self.buttons = buttons
+        self.end_caller_callback = end_caller_callback
         self.callbacks = ('yes', 'no')
         self.next_state_dict = {callback: state for callback, state in zip(
             self.callbacks, self.config.next_state)}
@@ -246,32 +262,48 @@ class CreateFieldBool(CreateField):
 
         return keyboard
 
-    async def done(
-        self, callback: CallbackQuery, state: FSMContext, lang: str
+    async def done_end(
+        self,
+        update: Message | CallbackQuery,
+        state: FSMContext,
+        lang: str
     ):
-        state_handler = f'{self.config.router_state.state}:done'
-        self.config.logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
-
-        result = callback.data == 'yes'
-
-        await self.update_data(callback=callback, state=state)
-
-        if await st.is_debag():
-            data = await state.get_data()
-            self.config.logger.info(f'{state_handler} {data=}')
+        result = update.data == 'yes'
 
         terminology_lang = getattr(self.config.term, lang)
 
         keyboard = await self.done_keyboard(lang, result)
 
-        await callback.message.answer(
+        await update.message.answer(
             text=(
                 terminology_lang.terms.done_yes if result
                 else terminology_lang.terms.done_no
             ),
             reply_markup=keyboard
         )
-        await state.set_state(self.next_state_dict[callback.data])
+        await state.set_state(self.next_state_dict[update.data])
+
+    async def done(
+        self, callback: CallbackQuery, state: FSMContext, lang: str
+    ):
+        state_handler = f'{self.config.router_state.state}:done'
+        self.config.logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+
+        await self.update_data(callback=callback, state=state)
+        result = callback.data == 'yes'
+
+        if await st.is_debag():
+            data = await state.get_data()
+            self.config.logger.info(f'{state_handler} {data=}')
+
+        done_func = self.done_end
+
+        if (self.config.end_caller
+                and callback.data == self.end_caller_callback
+                and not result):
+            done_func = self.config.end_caller
+
+        await done_func(callback, state=state, lang=lang)
 
 
 class CreateFieldInt(CreateField):

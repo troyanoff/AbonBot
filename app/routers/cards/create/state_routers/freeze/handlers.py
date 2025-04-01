@@ -7,6 +7,7 @@ from routers.cards.create.state import states_group
 from schemas.base import CreateFieldEnum
 from utils.create_item import CreateConfig, CreateFieldBool
 from .terminology import terminology
+from ..location.handlers import repr_items
 
 
 logger = logging.getLogger(__name__)
@@ -23,9 +24,11 @@ config = CreateConfig(
     field_type=CreateFieldEnum.default,
     data_field=states_group.data_field,
     term=terminology,
-    next_state=next_state
+    next_state=next_state,
+    end_caller=repr_items.repr,
 )
 handler = CreateFieldBool(
     config=config,
-    buttons=((), ())
+    buttons=((), ()),
+    end_caller_callback='no'
 )

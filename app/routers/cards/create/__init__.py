@@ -11,6 +11,8 @@ from .state_routers.time_limit.handlers import router as time_limit_router
 from .state_routers.freeze.handlers import router as freeze_router
 from .state_routers.freezing_days.handlers import \
     router as freezing_days_router
+from .state_routers.location.handlers import router as location_router
+from .state_routers.actions.handlers import router as actions_router
 from .state_routers.general.handlers import router as general_router
 
 
@@ -27,5 +29,7 @@ router.include_routers(
     time_limit_router,
     freeze_router,
     freezing_days_router,
+    location_router,
+    actions_router,
     general_router,
 )
