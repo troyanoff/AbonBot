@@ -10,18 +10,17 @@ async def bad_response(
     response: DoneSchema | FailSchema,
     state: FSMContext,
     lang: str,
-    callback: CallbackQuery = None,
-    message: Message = None
+    update: CallbackQuery | Message
 ) -> bool:
     if isinstance(response, FailSchema):
         core_term_lang: core_Lang = getattr(core_term, lang)
-        if callback:
-            await callback.message.answer(
+        if isinstance(update, CallbackQuery):
+            await update.message.answer(
                 text=core_term_lang.terms.error,
                 reply_markup=None
             )
         else:
-            await message.answer(
+            await update.answer(
                 text=core_term_lang.terms.error,
                 reply_markup=None
             )

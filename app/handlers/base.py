@@ -1,6 +1,6 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
-    CallbackQuery
+    CallbackQuery, Message
 )
 from dataclasses import dataclass
 
@@ -9,7 +9,7 @@ from utils.terminology import LangBase
 
 @dataclass
 class RequestTG:
-    callback: CallbackQuery
+    update: CallbackQuery | Message
     lang: str
     state: FSMContext
 

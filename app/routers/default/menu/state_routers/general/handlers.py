@@ -11,7 +11,7 @@ from schemas.representations import ClientReprSchema
 from routers.default.state import FSMDefault
 from routers.companies.representation.state import FSMCompanyRepr
 from routers.companies.representation.state_routers.repr.handlers import \
-    companies_repr
+    handler
 from .terminology import terminology, Lang
 
 
@@ -30,10 +30,10 @@ async def companies_command(
     state_handler = 'general:companies'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    await state.clear()
+    # await state.clear()
     await state.set_state(FSMCompanyRepr.repr)
-    await companies_repr(
-        message=message, client_data=client_data, state=state, lang=lang)
+    await handler(
+        update=message, state=state, lang=lang)
 
 
 @router.message(Command(commands='learn'))

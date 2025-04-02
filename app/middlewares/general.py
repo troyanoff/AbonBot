@@ -58,10 +58,17 @@ class ClientMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         service = get_client_service()
-        client = await service.get(user.id)
+        client = await service.get(tg_id=user.id)
 
         logger.info(f'actual_{client=}')
         data['client_data'] = client if client else None
+        if client:
+            state_data = await data['state'].get_data()
+            client_uuid = state_data.get('client_uuid', None)
+            if not client_uuid:
+                await data['state'].update_data(
+                    client_uuid=client.uuid
+                )
         return await handler(event, data)
 
 
