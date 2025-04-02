@@ -52,13 +52,10 @@ class BaseService:
             return FailSchema()
         return DoneSchema()
 
-    async def get(self, uuid: str) -> BaseModel:
-        params = {
-            'uuid': uuid
-        }
+    async def get(self, **kwargs) -> BaseModel:
         result = await self.api.get(
             path=self.base_path + 'get',
-            params=params
+            params=kwargs
         )
         if isinstance(result, (FailSchema, ExceptSchema)):
             logger.error(

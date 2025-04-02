@@ -13,6 +13,7 @@ from types import CoroutineType
 
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
+from handlers.base import RequestTG
 from keyboards.inline.base import create_simply_inline_kb, pages_inline_kb
 from routers.default.state import FSMDefault
 from schemas.base import BaseReprListSchema
@@ -29,12 +30,12 @@ class ReprConfig:
     states_group: StatesGroup
     router_state: State
     service_caller: CoroutineType
-    back_state_caller: CoroutineType
-    back_item_uuid_key: str
     next_state_caller: CoroutineType
     term: LangListBase
     callback_prefix: str
     item_name: list[str]
+    back_state_caller: CoroutineType = None
+    back_item_uuid_key: str = None
     stug_photo_name: str = 'default'
 
 
@@ -50,10 +51,11 @@ class ReprBase:
         self._register_handlers()
 
     def _register_handlers(self):
-        self.config.router.callback_query(
-            StateFilter(self.config.router_state),
-            F.data.in_(('back_state', 'cancel'))
-        )(self.back_state)
+        if self.config.back_state_caller:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data.in_(('back_state', 'cancel'))
+            )(self.back_state)
 
         self.config.router.callback_query(
             StateFilter(self.config.router_state),

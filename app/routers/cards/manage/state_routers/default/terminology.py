@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    manage: str = (
+    manage_content: str = (
         '<b>{name}</b>'
         '\n\n'
         '{description}'

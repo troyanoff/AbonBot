@@ -40,7 +40,7 @@ class ButtonCategoryRU:
     instructors: str = 'Инструкторы 🙋‍♀️'
     cards: str = 'Абонементы 📜'
     subscriptions: str = 'Клиенты 💰'
-    update_company: str = 'Изменить данные компании'
+    update: str = 'Изменить данные компании'
 
 
 @dataclass
