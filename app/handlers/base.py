@@ -1,15 +1,19 @@
-from aiogram import Router
+from abc import ABC, abstractmethod
+from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
-    CallbackQuery, Message, InputMediaPhoto, InlineKeyboardMarkup
+    CallbackQuery, Message, InputMediaPhoto, InlineKeyboardMarkup,
+    InlineKeyboardButton
 )
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dataclasses import dataclass, field
+from importlib import import_module
 from logging import Logger
 from pydantic import BaseModel
 from types import CoroutineType
 
-from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from schemas.base import MyBaseModel
 from schemas.utils import DoneSchema, FailSchema
@@ -21,6 +25,7 @@ class LastMessage(MyBaseModel):
     text: str
     photo: str
     keyboard: InlineKeyboardMarkup | None
+    state_instance: dict
 
 
 class LastMessageList(MyBaseModel):
@@ -37,7 +42,7 @@ class RequestTG:
 
 @dataclass
 class Term:
-    core: LangBase
+    core: core_Lang
     local: LangBase
 
 
@@ -60,23 +65,35 @@ class BaseConfig:
     router_state: State
     item_prefix: str
     service_caller: CoroutineType
-    next_state_caller: str
-    back_state_callers: tuple[str | None, str | None]  # one item, many items
     term: LangListBase
+    next_state_caller: str = None
     list_filter: dict = field(default_factory=lambda: {
         'company_uuid': 'company_uuid'
     })
-    callbacks: dict = field(default_factory=lambda: {
-        # 'callback_name': 'path to caller'
-    })
-    back_item_uuid_key: str = None
+    callbacks: dict = field(default_factory=lambda: {})
     stug_photo_name: str = 'default'
     last_term: LangListBase = None
+    back_button: str = None
 
 
-class BaseHandler:
+class BaseHandler(ABC):
     def __init__(self, config: BaseConfig):
         self.config = config
+        self._register_handlers()
+
+    @abstractmethod
+    def _register_handlers(self):
+        if self.config.callbacks:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data.in_(self.config.callbacks)
+            )(self.callback_caller)
+
+        if self.config.back_button:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data == self.config.back_button
+            )(self.to_last_state)
 
     def _get_request_data(
         self,
@@ -110,12 +127,42 @@ class BaseHandler:
         state_data = await data.request.state.get_data()
         return state_data
 
-    async def _create_keyboards(self, data: Data) -> InlineKeyboardMarkup:
+    async def create_inline_kb(
+        self,
+        buttons: dict,
+        width: int
+    ) -> InlineKeyboardMarkup:
+        kb_builder = InlineKeyboardBuilder()
+        kb_buttons: list[InlineKeyboardButton] = []
+        for button, value in buttons.items():
+            kb_buttons.append(InlineKeyboardButton(
+                text=value,
+                callback_data=button))
+
+        kb_builder.row(*kb_buttons, width=width)
+        return kb_builder.as_markup()
+
+    async def create_simply_kb(self, data: Data) -> InlineKeyboardMarkup:
+        buttons = data.term.local.buttons.__dict__
+
+        back_reason = await self.back_state_group_exist(data)
+        if back_reason:
+            core_buttons = await data.term.core.buttons.get_dict_with(
+                self.config.back_button)
+            buttons.update(core_buttons)
+
+        keyboard = await self.create_inline_kb(buttons, 1)
+        return keyboard
+
+    @abstractmethod
+    async def _create_keyboard(self, data: Data) -> InlineKeyboardMarkup:
         pass
 
+    @abstractmethod
     async def _create_caption(self, data: Data, item: BaseModel) -> str:
         pass
 
+    @abstractmethod
     async def _choise_media(self, data: Data, item: BaseModel) -> str:
         pass
 
@@ -123,22 +170,29 @@ class BaseHandler:
         state_data = await data.request.state.get_data()
         return state_data.get(key)
 
-    async def set_state_keys(self, data: Data, **kwargs):
-        await data.request.state.update_data(kwargs)
-
     async def choise_message(self, data: Data) -> Message:
         if isinstance(data.request.update, CallbackQuery):
             return data.request.update.message
         return data.request.update
 
+    async def choise_caller(
+        self, caller_entity: str | CoroutineType
+    ) -> CoroutineType:
+        if isinstance(caller_entity, CoroutineType):
+            return caller_entity
+        module_path, caller = caller_entity.rsplit('.', 1)
+        module = import_module(module_path)
+        return getattr(module, caller)
+
     async def next_state_group(self, data: Data):
+        await data.request.state.set_state(self.config.router_state)
         last_message_json = await self.get_state_key(data, 'last_message')
         if not last_message_json:
             await data.request.state.update_data(state_path=[])
             return
         state_path: list = await self.get_state_key(data, 'state_path')
         state_path.append(last_message_json)
-        await self.set_state_keys(data, state_path=state_path)
+        await data.request.state.update_data(state_path=state_path)
 
     async def back_state_group_exist(self, data: Data):
         state_path = await self.get_state_key(data, 'state_path')
@@ -147,8 +201,9 @@ class BaseHandler:
     async def back_state_group(self, data: Data):
         state_path: list = await self.get_state_key(data, 'state_path')
         last_message = LastMessage.model_validate_json(state_path.pop())
-        await self.set_state_keys(data, state_path=state_path)
+        await data.request.state.update_data(state_path=state_path)
         await data.request.state.set_state(last_message.state)
+        await data.request.state.set_data(last_message.state_instance)
         return last_message
 
     async def last_message_remember(
@@ -157,7 +212,7 @@ class BaseHandler:
         now_state = await data.request.state.get_state()
         if now_state != last_message.state:
             await data.request.state.set_state(last_message.state)
-        await self.set_state_keys(data, last_message=last_message)
+        await data.request.state.update_data(last_message=last_message)
 
     async def answer(self, data: Data, last_message: LastMessage):
         msg = await self.choise_message(data)
@@ -176,6 +231,10 @@ class BaseHandler:
                 caption=last_message.text,
                 reply_markup=last_message.keyboard
             )
+
+    async def remember_answer(self, data: Data, last_message: LastMessage):
+        await data.request.state.update_data(
+            last_message=last_message.model_dump_json())
 
     async def bad_response(
         self,
@@ -203,4 +262,45 @@ class BaseHandler:
                 )
             await data.request.state.clear()
             await data.request.state.set_state('FSMDefault:default')
+            return True
+
+    @abstractmethod
+    async def __call__(
+        self,
+        update: CallbackQuery | Message,
+        lang: str,
+        state: FSMContext
+    ):
+        pass
+
+    async def to_last_state(
+        self,
+        callback: CallbackQuery,
+        lang: str,
+        state: FSMContext
+    ):
+        data: Data = self._get_request_data(
+            'to_last_state', callback, lang, state
+        )
+        reason = await self.back_state_group_exist(data)
+        if not reason:
             return
+        last_message = await self.back_state_group(data)
+        await self.remember_answer(data, last_message)
+        await self.answer(data, last_message)
+
+    async def callback_caller(
+        self,
+        callback: CallbackQuery,
+        lang: str,
+        state: FSMContext
+    ):
+        data: Data = self._get_request_data(
+            'callback_caller', callback, lang, state
+        )
+        caller = await self.choise_caller(self.config.callbacks[callback.data])
+        await caller(
+            update=data.request.update,
+            state=data.request.state,
+            lang=data.request.lang
+        )

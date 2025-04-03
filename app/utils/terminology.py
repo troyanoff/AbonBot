@@ -3,7 +3,9 @@ from dataclasses import dataclass
 
 @dataclass
 class CategoryBase:
-    pass
+
+    async def get_dict_with(self, *keys) -> dict:
+        return {key: getattr(self, key) for key in keys}
 
 
 @dataclass

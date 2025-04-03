@@ -11,11 +11,10 @@ from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import create_simply_inline_kb
 from keyboards.menu.base import set_client_menu
 from services.companies import get_company_service
-from states.general import FSMStart
 from schemas.representations import ClientReprSchema, CompanyListSchema
 from schemas.utils import FailSchema
 from routers.clients.update.state import FSMClientUpdate
-from routers.default.state import FSMDefault
+from routers.default.state import FSMDefault, FSMStart
 from routers.companies.create.state_routers.name.handlers import start_create
 from .terminology import terminology, Lang
 

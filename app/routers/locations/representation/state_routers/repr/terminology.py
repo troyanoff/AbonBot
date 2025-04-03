@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
+from utils.terminology import CategoryBase
+
 
 @dataclass
-class TermCategoryRU:
+class TermCategoryRU(CategoryBase):
     not_items: str = (
         'У этой компании пока нет локаций'
         '\n\n'
@@ -19,7 +21,7 @@ class TermCategoryEN(TermCategoryRU):
 
 
 @dataclass
-class ButtonCategoryRU:
+class ButtonCategoryRU(CategoryBase):
     create: str = 'Создать локацию'
 
 

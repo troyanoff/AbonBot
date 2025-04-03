@@ -20,16 +20,12 @@ config = ManageConfig(
     router_state=router_state,
     item_prefix='location',
     service_caller=get_location_service,
-    back_state_callers=(
-        'routers.companies.manage.default_handler',
-        'routers.locations.representation.default_handler'
-    ),
     term=terminology,
     callbacks={
         'update': 'routers.locations.update.start_handler',
         'create': 'routers.locations.create.start_handler',
     },
-    format={
+    format_caption={
         'name': 'name',
         'description': 'description',
         'city': 'city',
@@ -37,7 +33,7 @@ config = ManageConfig(
         'house': 'house',
         'flat': 'flat',
     },
-    back_item_uuid_key='company_uuid'
+    back_button='back_state'
 )
 
 handler = ManageBase(

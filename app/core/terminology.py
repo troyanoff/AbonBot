@@ -2,10 +2,11 @@ from dataclasses import dataclass
 
 from core.config import settings as st
 from core.items.menus import menu_ru, menu_en, menu_start_ru, menu_start_en
+from utils.terminology import CategoryBase, LangBase, LangListBase
 
 
 @dataclass
-class PhotoCategoryRU:
+class PhotoCategoryRU(CategoryBase):
     default: str = st.stug_photo
     error: str = st.stug_photo
 
@@ -16,7 +17,7 @@ class PhotoCategoryEN(PhotoCategoryRU):
 
 
 @dataclass
-class TermCategoryRU:
+class TermCategoryRU(CategoryBase):
     deadlock: str = (
         'Ваше действие не было предусмотрено 😔'
         '\n'
@@ -48,16 +49,13 @@ class TermCategoryEN(TermCategoryRU):
 
 
 @dataclass
-class ButtonCategoryRU:
+class ButtonCategoryRU(CategoryBase):
     cancel: str = 'Отмена'
     miss_state: str = 'Пропустить шаг'
     general: str = 'На главную'
     back: str = '⬅️'
     forward: str = '➡️'
     back_state: str = 'Назад'
-
-    async def get_dict_with(self, *keys) -> dict:
-        return {key: getattr(self, key) for key in keys}
 
 
 @dataclass
@@ -66,7 +64,7 @@ class ButtonCategoryEN(ButtonCategoryRU):
 
 
 @dataclass
-class Lang:
+class Lang(LangBase):
     terms: TermCategoryRU | TermCategoryEN
     buttons: ButtonCategoryRU | ButtonCategoryEN
     menu: dict
@@ -75,7 +73,7 @@ class Lang:
 
 
 @dataclass
-class LangList:
+class LangList(LangListBase):
     ru: Lang
     en: Lang
 

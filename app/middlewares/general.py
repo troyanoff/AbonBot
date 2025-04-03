@@ -8,7 +8,6 @@ from core.config import settings as st
 from core.terminology import Lang, terminology
 from keyboards.menu.base import set_client_menu
 from services.clients import get_client_service
-from states.general import FSMDefault
 
 
 logger = logging.getLogger(__name__)
@@ -62,13 +61,6 @@ class ClientMiddleware(BaseMiddleware):
 
         logger.info(f'actual_{client=}')
         data['client_data'] = client if client else None
-        if client:
-            state_data = await data['state'].get_data()
-            client_uuid = state_data.get('client_uuid', None)
-            if not client_uuid:
-                await data['state'].update_data(
-                    client_uuid=client.uuid
-                )
         return await handler(event, data)
 
 
@@ -121,7 +113,7 @@ class NotClientMiddleware(BaseMiddleware):
         current_state = await data['state'].get_state()
         if client and current_state is None:
             logger.info('Set default state')
-            await data['state'].set_state(FSMDefault.default)
+            await data['state'].set_state('FSMDefault:default')
             data['raw_state'] = 'FSMDefault:default'
 
         logger.info(f'\n{'=' * 80}\nstate={data['raw_state']}\n{'=' * 80}')

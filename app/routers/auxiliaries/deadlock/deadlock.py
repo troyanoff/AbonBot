@@ -4,9 +4,9 @@ import logging
 from aiogram import Router
 from aiogram.types import Message, ErrorEvent, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from states.general import FSMStart
 
 from core.terminology import terminology as core_term, Lang as core_Lang
+from routers.default.state import FSMStart
 from schemas.representations import ClientReprSchema
 
 

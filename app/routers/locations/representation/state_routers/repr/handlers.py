@@ -14,23 +14,19 @@ router_state = states_group.repr
 next_state_caller = (
     'routers.locations.manage.state_routers.default.handlers.handler'
 )
-back_state_caller = (
-    'routers.companies.manage.state_routers.default.handlers.handler'
-)
 
 config = ReprConfig(
     logger=logger,
     router=router,
     states_group=states_group,
     router_state=router_state,
-    service_caller=get_location_service,
-    next_state_caller=next_state_caller,
-    term=terminology,
     item_prefix='location',
+    service_caller=get_location_service,
+    term=terminology,
+    next_state_caller=next_state_caller,
     item_name=['name'],
-    back_state_caller=back_state_caller,
-    back_item_uuid_key='company_uuid',
-    format={'company_name': 'company_name'},
+    back_button='back_state',
+    format_caption={'company_name': 'company_name'},
     callbacks={
         'create': 'routers.locations.create.start_handler'
     }

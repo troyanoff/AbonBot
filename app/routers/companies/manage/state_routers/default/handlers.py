@@ -20,10 +20,6 @@ config = ManageConfig(
     router_state=router_state,
     item_prefix='company',
     service_caller=get_company_service,
-    back_state_callers=(
-        None,
-        'routers.companies.representation.default_handler'
-    ),
     term=terminology,
     callbacks={
         'locations': 'routers.locations.representation.default_handler',
@@ -34,12 +30,13 @@ config = ManageConfig(
             'routers.subscriptions.representation.default_handler',
         'update': 'routers.companies.update.start_handler',
     },
-    format={
+    format_caption={
         'name': 'name',
         'description': 'description',
         'email': 'email',
         'max_hour_cancel': 'max_hour_cancel',
-    }
+    },
+    back_button='back_state'
 )
 
 handler = ManageBase(
