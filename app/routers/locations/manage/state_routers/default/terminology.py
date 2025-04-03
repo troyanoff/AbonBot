@@ -10,7 +10,7 @@ class TermCategoryRU:
         '\n\n'
         'Просто введите количество одним числом ✏️'
     )
-    manage: str = (
+    manage_content: str = (
         '<b>{name}</b>'
         '\n\n'
         '{description}'

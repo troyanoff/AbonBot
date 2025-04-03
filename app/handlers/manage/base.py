@@ -45,6 +45,7 @@ class ManageBase:
     ):
         self.config = config
         self.request: RequestTG = None
+        self.term: Term = None
         self._register_handlers()
 
     def _register_handlers(self):
@@ -71,7 +72,6 @@ class ManageBase:
         terminology_lang: LangBase = getattr(self.config.term, lang)
         core_term_lang: core_Lang = getattr(core_term, lang)
         self.term = Term(core=core_term_lang, local=terminology_lang)
-        print(self.request, '2' * 1000)
 
     async def _get_state_key(self, key: str):
         data = await self.request.state.get_data()
@@ -108,6 +108,37 @@ class ManageBase:
         result = terminology_lang.terms.manage_content.format(**content)
         return result
 
+    async def choise_media(self, item: BaseModel) -> str:
+        if getattr(item, 'photo_id', None):
+            return item.photo_id
+        return getattr(self.term.core.photos, self.config.stug_photo_name)
+
+    async def choise_message(self):
+        if isinstance(self.request.update, CallbackQuery):
+            return self.request.update.message
+        return self.request.update
+
+    async def call_answer(self, item: BaseModel):
+        text = await self.create_caption(item)
+        keyboard = await self.create_keyboards()
+        media = await self.choise_media(item=item)
+        msg = await self.choise_message()
+
+        if msg.photo:
+            await msg.edit_media(
+                media=InputMediaPhoto(
+                    media=media,
+                    caption=text
+                ),
+                reply_markup=keyboard
+            )
+        else:
+            await msg.answer_photo(
+                photo=media,
+                caption=text,
+                reply_markup=keyboard
+            )
+
     async def __call__(
         self,
         update: CallbackQuery | Message,
@@ -125,28 +156,16 @@ class ManageBase:
         if await bad_response(item, **self.request.__dict__):
             return
 
-        text = await self.create_caption(item)
-        keyboard = await self.create_keyboards()
-        media = getattr(self.term.core.photos, self.config.stug_photo_name)
+        await self.call_answer(item=item)
 
-        if isinstance(self.request.update, CallbackQuery):
-            msg = self.request.update.message
-        else:
-            msg = self.request.update
-        if msg.photo:
-            await msg.edit_media(
-                media=InputMediaPhoto(
-                    media=media,
-                    caption=text
-                ),
-                reply_markup=keyboard
-            )
-        else:
-            await msg.answer_photo(
-                photo=media,
-                caption=text,
-                reply_markup=keyboard
-            )
+    async def choise_caller(
+        self, caller_entity: str | CoroutineType
+    ) -> CoroutineType:
+        if isinstance(caller_entity, CoroutineType):
+            return caller_entity
+        module_path, caller = caller_entity.rsplit('.', 1)
+        module = import_module(module_path)
+        return getattr(module, caller)
 
     async def callback_caller(
         self,
@@ -160,11 +179,8 @@ class ManageBase:
             lang=lang,
             state=state
         )
-        module_path, caller = self.config.callbacks[
-            callback.data].rsplit('.', 1)
-        module = import_module(module_path)
-        await getattr(module, caller)(**self.request.__dict__)
-        await self.config.callbacks[callback.data](**self.request.__dict__)
+        caller = await self.choise_caller(self.config.callbacks[callback.data])
+        await caller(**self.request.__dict__)
 
     async def back_state(
         self,
@@ -182,15 +198,13 @@ class ManageBase:
         if count > 1:
             path = self.config.back_state_callers[1]
             if path:
-                handler = import_module(path)
-                uuid_key = self.config.back_item_uuid_key
-                if uuid_key:
-                    uuid = await self._get_state_key(uuid_key)
-                    await handler(uuid=uuid, **self.request.__dict__)
+                caller = await self.choise_caller(path)
+                if self.config.back_item_uuid_key:
+                    await caller(**self.request.__dict__)
                 else:
-                    await handler(**self.request.__dict__)
+                    await caller(**self.request.__dict__)
         else:
             path = self.config.back_state_callers[0]
             if path:
-                handler = import_module(path)
-                await handler(**self.request.__dict__)
+                caller = await self.choise_caller(path)
+                await caller(**self.request.__dict__)

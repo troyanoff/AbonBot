@@ -157,7 +157,8 @@ async def pages_inline_kb(
     page: int,
     total_count: int,
     lang: str,
-    additional_buttons: dict = {}
+    additional_buttons: dict = {},
+    back_state: bool = True
 ) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     kb_buttons: list[InlineKeyboardButton] = []
@@ -190,11 +191,11 @@ async def pages_inline_kb(
                 )
             )
         kb_builder.row(*add_butt, width=1)
-
-    kb_builder.row(
-        InlineKeyboardButton(
-            text=core_term_lang.buttons.back_state,
-            callback_data='back_state'
+    if back_state:
+        kb_builder.row(
+            InlineKeyboardButton(
+                text=core_term_lang.buttons.back_state,
+                callback_data='back_state'
+            )
         )
-    )
     return kb_builder.as_markup()

@@ -5,7 +5,7 @@ from core.config import settings as st
 
 @dataclass
 class TermCategoryRU:
-    start_create: str = (
+    start: str = (
         'Введите название локации ✏️'
         '\n\n'
         f'Оно не должно быть длиннее {st.short_field_len} символов ❗️'

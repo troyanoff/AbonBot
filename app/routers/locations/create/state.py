@@ -12,3 +12,7 @@ class FSMLocationCreate(StatesGroup):
     flat = State()
     timezone = State()
     core_buttons = ('cancel', )
+    data_field = 'new_location'
+
+
+states_group = FSMLocationCreate

@@ -12,7 +12,7 @@ from services.locations import get_location_service
 from schemas.locations import LocationUpdateSchema
 from schemas.utils import FailSchema, DoneSchema
 from routers.locations.update.state import package_state
-from routers.locations.manage.state_routers.default.handlers import manage
+# from routers.locations.manage.state_routers.default.handlers import manage
 from routers.default.state import FSMDefault
 from .terminology import terminology, Lang
 
@@ -69,9 +69,9 @@ async def done(
     del data['update_location']
     await state.update_data(**data)
     location = await service.get(result.response.data['item']['uuid'])
-    await manage(
-        message=message, lang=lang, state=state, location=location
-    )
+    # await manage(
+    #     message=message, lang=lang, state=state, location=location
+    # )
 
 
 @router.callback_query(

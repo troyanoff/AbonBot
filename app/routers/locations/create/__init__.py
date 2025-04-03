@@ -1,6 +1,8 @@
 from aiogram import Router
 
-from .state_routers.name.handlers import router as name_router
+from .state_routers.name.handlers import (
+    router as name_router, handler as start_handler
+)
 from .state_routers.description.handlers import router as des_router
 from .state_routers.photo.handlers import router as photo_router
 from .state_routers.city.handlers import router as city_router
