@@ -7,12 +7,13 @@ from aiogram.types import (
     CallbackQuery, Message
 )
 from aiogram.utils.keyboard import InlineKeyboardMarkup
+from dataclasses import dataclass, field
 from logging import Logger
 from types import CoroutineType
 
 from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
-from handlers.base import RequestTG, Term
+from handlers.base import RequestTG, Term, BaseConfig, BaseHandler, Data
 from keyboards.inline.base import create_simply_inline_kb
 from schemas.base import CreateFieldEnum
 from utils.terminology import LangBase
@@ -219,3 +220,56 @@ class CreateField:
             text=self.term.local.terms.error,
             reply_markup=keyboard
         )
+
+
+@dataclass
+class RememberConfig(BaseConfig):
+    generated_field: str
+    start_caller: CoroutineType
+    end_caller: CoroutineType
+    queue: list[CreateField]
+
+
+class Remember():
+    index_name: str = 'now_index'
+
+    def __init__(self, config: RememberConfig):
+        self.config = config
+        self.del_after = (self.index_name, self.config.generated_field)
+        self._queue_notification()
+
+    async def get_state_key(self, data: Data, key: str):
+        state_data = await data.request.state.get_data()
+        return state_data.get(key)
+
+    def _queue_notification(self):
+        for elem in self.config.queue:
+            elem.handler = self
+
+    async def set_index(self, data: Data):
+        now_index = await self.get_state_key(data, self.index_name)
+        new_index = 0 if now_index is None else now_index + 1
+        if new_index == len(self.config.queue):
+            await self.end()
+            return
+        await data.request.state.update_data(now_index=new_index)
+
+    async def set_next_state(self, data: Data, next_router_state: State):
+        await data.request.state.set_state(next_router_state)
+
+    async def next_state(self, data: Data):
+        now_index = await self.get_state_key(data, self.index_name)
+        new_index = 0 if now_index is None else now_index + 1
+        if new_index == len(self.config.queue):
+            await self.end()
+            return
+        await data.request.state.update_data(now_index=new_index)
+        await data.request.state.set_state(
+            self.config.queue[new_index].config.router_state)
+
+    async def __call__(self, data: Data):
+        await self.config.start_caller(data)
+        await self.set_next_state(data)
+
+    async def end(self, data: Data):
+        await self.config.end_caller(data)
