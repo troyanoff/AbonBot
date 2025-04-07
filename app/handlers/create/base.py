@@ -1,275 +1,220 @@
 
 from aiogram import Router, F
-from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
+from aiogram.filters import StateFilter, BaseFilter
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery, Message
 )
 from aiogram.utils.keyboard import InlineKeyboardMarkup
 from dataclasses import dataclass, field
 from logging import Logger
-from types import CoroutineType
+from typing import Any
 
 from core.config import settings as st
-from core.terminology import terminology as core_term, Lang as core_Lang
-from handlers.base import RequestTG, Term, BaseConfig, BaseHandler, Data
-from keyboards.inline.base import create_simply_inline_kb
-from schemas.base import CreateFieldEnum
-from utils.terminology import LangBase
+from handlers.base import BaseHandler, Data, RequestTG
+from utils.terminology import LangListBase
 
 
+@dataclass
 class CreateConfig:
-    def __init__(
-        self,
-        logger: Logger,
-        router: Router,
-        states_group: StatesGroup,
-        router_state: State,
-        field_type: CreateFieldEnum,
-        data_field: str,
-        term,
-        need_last_buttons: bool = False,
-        last_buttons: tuple = None,
-        last_term=None,
-        next_state: State | tuple = None,
-        end_caller: CoroutineType = None
-    ):
-        self.router = router
-        self.logger = logger
-        self.states_group = states_group
-        self.router_state = router_state
-        self.field_type = field_type
-        self.data_field = data_field
-        self.term = term
-        self.need_last_buttons = need_last_buttons
-        self.last_buttons = last_buttons
-        self.last_term = last_term
-        self.next_state = next_state
-        self.end_caller = end_caller
+    logger: Logger
+    router: Router
+    states_group: StatesGroup
+    router_state: State
+    term: LangListBase
+    field_filter: BaseFilter
+    callbacks: dict = field(default_factory=lambda: {})
+    back_button: str = None
+    miss_button: str = ''
 
 
-class CreateField:
+class CreateField(BaseHandler):
     def __init__(
         self,
         config: CreateConfig,
     ):
         self.config = config
-        self.request: RequestTG = None
-        self.term: Term = None
+        self.handler = None
         self._register_handlers()
 
-    def _register_mutable_handlers(self):
-        self.config.router.message(
-            StateFilter(self.config.router_state),
-            F.text.len() <= st.short_field_len
-        )(self.done)
+    def _register_handlers(self):
+        pass
+
+    async def update_data(self, data: Data, result: Any | dict):
+        field_name = self.config.router_state.state.split(st.state_sep)[-1]
+
+        state_data = await data.request.state.get_data()
+        data_field_dict: dict = state_data[self.handler.config.generated_field]
+        if isinstance(result, dict):
+            data_field_dict.update(result)
+        else:
+            data_field_dict[field_name] = result
+
+        await data.request.state.update_data(
+            {self.handler.config.generated_field: data_field_dict}
+        )
+
+        if await st.is_debag():
+            state_data = await data.request.state.get_data()
+            self.config.logger.info(f'\n{'=' * 80}\n{state_data}\n{'=' * 80}')
+
+    async def choise_message_method(self, data: Data, msg: Message):
+        if isinstance(data.request.update, CallbackQuery):
+            return msg.edit_text
+        else:
+            return msg.answer
+
+    async def answer(
+        self, data: Data, text: str, keyboard: InlineKeyboardMarkup | None
+    ):
+        msg = await self.choise_message(data)
+        msg_method = await self.choise_message_method(data, msg)
+
+        await msg_method(
+            text=text,
+            reply_markup=keyboard
+        )
+
+    async def create_simply_kb(
+        self, data: Data
+    ) -> InlineKeyboardMarkup:
+        buttons = data.term.local.buttons.__dict__
+
+        if self.config.miss_button:
+            core_buttons = await data.term.core.buttons.get_dict_with(
+                self.config.miss_button)
+            buttons.update(core_buttons)
+
+        back_reason = await self.back_state_group_exist(data)
+        if back_reason:
+            core_buttons = await data.term.core.buttons.get_dict_with(
+                self.config.back_button)
+            buttons.update(core_buttons)
+
+        keyboard = await self.create_inline_kb(buttons, 1)
+        return keyboard
+
+    async def _create_keyboard(self, data: Data):
+        return await self.create_simply_kb(data)
+
+    async def __call__(
+        self, request_tg: RequestTG
+    ):
+        data: Data = self._update_to_request_data(request_tg)
+        keyboard = await self._create_keyboard(data)
+        text = data.term.local.terms.call
+        await self.answer(data, text, keyboard)
+
+    async def miss(
+        self,
+        callback: CallbackQuery,
+        state: FSMContext,
+        lang: str
+    ):
+        data: Data = self._get_request_data(
+            'miss', callback, lang, state
+        )
+        await self.handler.next_state(data.request)
+
+
+class CreateFieldMsg(CreateField):
+    def __init__(
+        self,
+        config: CreateConfig,
+    ):
+        self.config = config
+        self.handler = None
+        self._register_handlers()
 
     def _register_handlers(self):
-        self._register_mutable_handlers()
+        self.config.router.message(
+            StateFilter(self.config.router_state),
+            self.config.field_filter
+        )(self.done)
 
         self.config.router.message(
             StateFilter(self.config.router_state)
         )(self.error)
 
-    def _register_request(
-        self,
-        handler_name: str,
-        update: CallbackQuery | Message,
-        lang: str,
-        state: FSMContext
-    ):
-        state_handler = f'{self.config.router_state.state}:{handler_name}'
-        self.config.logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
-        self.request = RequestTG(update=update, lang=lang, state=state)
-        terminology_lang: LangBase = getattr(self.config.term, lang)
-        core_term_lang: core_Lang = getattr(core_term, lang)
-        self.term = Term(core=core_term_lang, local=terminology_lang)
-        if self.config.last_term:
-            last_term_lang: LangBase = getattr(self.config.last_term, lang)
-            self.term.last_local = last_term_lang
+        if self.config.callbacks:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data.in_(self.config.callbacks)
+            )(self.callback_caller)
 
-    async def choise_message(self):
-        if isinstance(self.request.update, CallbackQuery):
-            return self.request.update.message
-        return self.request.update
+        if self.config.miss_button:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data == self.config.miss_button
+            )(self.miss)
 
-    async def update_data(self):
-        field_name = self.config.router_state.state.split(st.state_sep)[-1]
-        data = await self.request.state.get_data()
-        data_field_dict = data[self.config.data_field]
-        data_field_dict[field_name] = self.request.update.text
-        await self.request.state.update_data(
-            {self.config.data_field: data_field_dict}
-        )
-        if await st.is_debag():
-            data = await self.request.state.get_data()
-            self.config.logger.info(f'\n{'=' * 80}\n{data}\n{'=' * 80}')
-
-    async def done_keyboard(self) -> InlineKeyboardMarkup:
-
-        buttons = self.term.local.buttons.__dict__
-        core_buttons = await self.term.core.buttons.get_dict_with(
-            *self.config.states_group.core_buttons)
-        buttons.update(core_buttons)
-
-        keyboard = await create_simply_inline_kb(
-            buttons,
-            1
-        )
-
-        return keyboard
-
-    async def error_keyboard(self, lang: str) -> InlineKeyboardMarkup:
-        if self.config.last_term:
-            buttons = await self.term.last_local.buttons.get_dict_with(
-                *self.config.last_buttons
-            )
-            core_buttons = await self.term.core.buttons.get_dict_with(
-                *self.config.states_group.core_buttons)
-            buttons.update(core_buttons)
-        else:
-            buttons = await self.term.core.buttons.get_dict_with(
-                *self.config.states_group.core_buttons)
-
-        keyboard = await create_simply_inline_kb(
-            buttons,
-            1
-        )
-
-        return keyboard
-
-    async def done_end(
-        self,
-        update: Message | CallbackQuery,
-        state: FSMContext,
-        lang: str
-    ):
-        keyboard = await self.done_keyboard()
-
-        await update.answer(
-            text=self.term.local.terms.done,
-            reply_markup=keyboard
-        )
-        await state.set_state(self.config.next_state)
-
-    async def __call__(
-        self, update: CallbackQuery | Message, state: FSMContext, lang: str
-    ):
-        self._register_request(
-            handler_name='__call__',
-            update=update,
-            lang=lang,
-            state=state
-        )
-        data = await state.get_data()
-
-        await update.answer()
-        await state.update_data(
-            {
-                self.config.data_field: {
-                    'company_uuid': data['company_uuid']
-                }
-            }
-        )
-
-        core_buttons = await self.term.core.buttons.get_dict_with(
-            *self.config.states_group.core_buttons)
-
-        keyboard = await create_simply_inline_kb(
-            core_buttons,
-            1
-        )
-        msg = await self.choise_message()
-        await msg.answer(
-            text=self.term.local.terms.start,
-            reply_markup=keyboard
-        )
-        await state.set_state(self.config.router_state)
+        if self.config.back_button:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data == self.config.back_button
+            )(self.to_last_state)
 
     async def done(
-        self, message: Message, state: FSMContext, lang: str
+        self,
+        message: Message,
+        state: FSMContext,
+        lang: str,
+        result: dict | Any
     ):
-        self._register_request(
-            handler_name='done',
-            update=message,
-            lang=lang,
-            state=state
+        data: Data = self._get_request_data(
+            'done', message, lang, state
         )
-
-        await self.update_data()
-
-        done_func = self.done_end
-        if self.config.end_caller:
-            done_func = self.config.end_caller
-        await done_func(message, state, lang)
+        await self.update_data(data, result)
+        await self.handler.next_state(data.request)
 
     async def error(
         self, message: Message, lang: str, state: FSMContext
     ):
-        self._register_request(
-            handler_name='error',
-            update=message,
-            lang=lang,
-            state=state
+        data: Data = self._get_request_data(
+            'error', message, lang, state
         )
-
-        keyboard = await self.error_keyboard(lang)
-
-        await message.answer(
-            text=self.term.local.terms.error,
-            reply_markup=keyboard
-        )
+        keyboard = await self._create_keyboard(data)
+        text = data.term.local.terms.error
+        await self.answer(data, text, keyboard)
 
 
-@dataclass
-class RememberConfig(BaseConfig):
-    generated_field: str
-    start_caller: CoroutineType
-    end_caller: CoroutineType
-    queue: list[CreateField]
-
-
-class Remember():
-    index_name: str = 'now_index'
-
-    def __init__(self, config: RememberConfig):
+class CreateFieldClb(CreateField):
+    def __init__(
+        self,
+        config: CreateConfig,
+    ):
         self.config = config
-        self.del_after = (self.index_name, self.config.generated_field)
-        self._queue_notification()
+        self.handler = None
+        self._register_handlers()
 
-    async def get_state_key(self, data: Data, key: str):
-        state_data = await data.request.state.get_data()
-        return state_data.get(key)
+    def _register_handlers(self):
+        self.config.router.callback_query(
+            StateFilter(self.config.router_state),
+            self.config.field_filter
+        )(self.callback_caller)
 
-    def _queue_notification(self):
-        for elem in self.config.queue:
-            elem.handler = self
+        if self.config.miss_button:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data == self.config.miss_button
+            )(self.miss)
 
-    async def set_index(self, data: Data):
-        now_index = await self.get_state_key(data, self.index_name)
-        new_index = 0 if now_index is None else now_index + 1
-        if new_index == len(self.config.queue):
-            await self.end()
-            return
-        await data.request.state.update_data(now_index=new_index)
+        if self.config.back_button:
+            self.config.router.callback_query(
+                StateFilter(self.config.router_state),
+                F.data == self.config.back_button
+            )(self.to_last_state)
 
-    async def set_next_state(self, data: Data, next_router_state: State):
-        await data.request.state.set_state(next_router_state)
-
-    async def next_state(self, data: Data):
-        now_index = await self.get_state_key(data, self.index_name)
-        new_index = 0 if now_index is None else now_index + 1
-        if new_index == len(self.config.queue):
-            await self.end()
-            return
-        await data.request.state.update_data(now_index=new_index)
-        await data.request.state.set_state(
-            self.config.queue[new_index].config.router_state)
-
-    async def __call__(self, data: Data):
-        await self.config.start_caller(data)
-        await self.set_next_state(data)
-
-    async def end(self, data: Data):
-        await self.config.end_caller(data)
+    async def callback_caller(
+        self,
+        callback: CallbackQuery,
+        lang: str,
+        state: FSMContext,
+        result: Any | dict
+    ):
+        data: Data = self._get_request_data(
+            'callback_caller', callback, lang, state
+        )
+        await self.update_data(data, result)
+        await self.handler.next_state(data.request)

@@ -2,17 +2,17 @@ import logging
 
 from aiogram import Router
 
-from core.config import settings as st
 from routers.clients.create.state import states_group
-from filters.general import TextAlphaFilter
-from handlers.create.base import CreateConfig, CreateFieldMsg
+from filters.general import CallbackFilter
+from handlers.create.base import CreateConfig, CreateFieldClb
+from schemas.base import SexEnum
 from .terminology import terminology
 
 
 logger = logging.getLogger(__name__)
 
 router = Router()
-router_state = states_group.first_name
+router_state = states_group.sex
 
 config = CreateConfig(
     logger=logger,
@@ -20,9 +20,14 @@ config = CreateConfig(
     states_group=states_group,
     router_state=router_state,
     term=terminology,
-    field_filter=TextAlphaFilter(st.short_field_len)
+    field_filter=CallbackFilter(
+        {
+            'm': 'm',
+            'f': 'f'
+        }
+    )
 )
 
-handler = CreateFieldMsg(
+handler = CreateFieldClb(
     config=config
 )

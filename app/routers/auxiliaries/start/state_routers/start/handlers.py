@@ -5,9 +5,9 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from routers.clients.create.state import FSMClientCreate
+from routers.clients.create.queue import handler
 from routers.auxiliaries.start.state import FSMStart
-from .terminology import terminology, Lang
+from handlers.base import create_request_tg, RequestTG
 
 
 logger = logging.getLogger(__name__)
@@ -22,11 +22,11 @@ async def registration(
     state: FSMContext,
     lang: str
 ):
-    state_handler = f'{router_state.state}:registration'
-    logger.info(state_handler)
-    terminology_lang: Lang = getattr(terminology, lang)
-    await message.answer(
-        text=terminology_lang.terms.registration
+    request_tg: RequestTG = await create_request_tg(
+        'registration',
+        update=message,
+        lang=lang,
+        state=state,
+        logger=logger
     )
-
-    await state.set_state(FSMClientCreate.first_name)
+    await handler(request_tg)

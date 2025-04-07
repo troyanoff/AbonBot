@@ -23,13 +23,9 @@ from utils.terminology import LangBase, LangListBase
 class LastMessage(MyBaseModel):
     state: str
     text: str
-    photo: str
-    keyboard: InlineKeyboardMarkup | None
-    state_instance: dict
-
-
-class LastMessageList(MyBaseModel):
-    queue: list[LastMessage]
+    photo: str = None
+    keyboard: InlineKeyboardMarkup | None = None
+    state_instance: dict = None
 
 
 @dataclass
@@ -47,14 +43,26 @@ class Term:
 
 
 @dataclass
-class TermLast(Term):
-    last_local: LangBase = None
-
-
-@dataclass
 class Data:
     request: RequestTG
-    term: Term | TermLast
+    term: Term
+
+
+async def create_request_tg(
+    handler_name: str,
+    update: CallbackQuery | Message,
+    lang: str,
+    state: FSMContext,
+    logger: Logger,
+    **kwargs
+) -> RequestTG:
+    repr_state = await state.get_state()
+    state_handler = f'{repr_state}:{handler_name}'
+    logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+
+    return RequestTG(
+        update=update, lang=lang, state=state, kwargs=kwargs
+    )
 
 
 @dataclass
@@ -72,7 +80,6 @@ class BaseConfig:
     })
     callbacks: dict = field(default_factory=lambda: {})
     stug_photo_name: str = 'default'
-    last_term: LangListBase = None
     back_button: str = None
 
 
@@ -81,7 +88,6 @@ class BaseHandler(ABC):
         self.config = config
         self._register_handlers()
 
-    @abstractmethod
     def _register_handlers(self):
         if self.config.callbacks:
             self.config.router.callback_query(
@@ -112,16 +118,14 @@ class BaseHandler(ABC):
 
         terminology_lang: LangBase = getattr(self.config.term, lang)
         core_term_lang: core_Lang = getattr(core_term, lang)
-        if self.config.last_term:
-            last_term_lang: LangBase = getattr(self.config.last_term, lang)
-            term = TermLast(
-                core=core_term_lang,
-                local=terminology_lang,
-                last_local=last_term_lang
-            )
-        else:
-            term = Term(core=core_term_lang, local=terminology_lang)
+        term = Term(core=core_term_lang, local=terminology_lang)
         return Data(request=request, term=term)
+
+    def _update_to_request_data(self, request_tg: RequestTG) -> Data:
+        terminology_lang: LangBase = getattr(self.config.term, request_tg.lang)
+        core_term_lang: core_Lang = getattr(core_term, request_tg.lang)
+        term = Term(core=core_term_lang, local=terminology_lang)
+        return Data(request=request_tg, term=term)
 
     async def _get_count(self, data: Data):
         state_data = await data.request.state.get_data()
@@ -142,7 +146,9 @@ class BaseHandler(ABC):
         kb_builder.row(*kb_buttons, width=width)
         return kb_builder.as_markup()
 
-    async def create_simply_kb(self, data: Data) -> InlineKeyboardMarkup:
+    async def create_simply_kb(
+        self, data: Data
+    ) -> InlineKeyboardMarkup:
         buttons = data.term.local.buttons.__dict__
 
         back_reason = await self.back_state_group_exist(data)
@@ -154,15 +160,12 @@ class BaseHandler(ABC):
         keyboard = await self.create_inline_kb(buttons, 1)
         return keyboard
 
-    @abstractmethod
     async def _create_keyboard(self, data: Data) -> InlineKeyboardMarkup:
         pass
 
-    @abstractmethod
     async def _create_caption(self, data: Data, item: BaseModel) -> str:
         pass
 
-    @abstractmethod
     async def _choise_media(self, data: Data, item: BaseModel) -> str:
         pass
 

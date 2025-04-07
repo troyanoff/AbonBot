@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable, Dict
 from core.config import settings as st
 from core.terminology import Lang, terminology
 from keyboards.menu.base import set_client_menu
+from schemas.representations import ClientReprSchema
 from services.clients import get_client_service
 
 
@@ -60,7 +61,9 @@ class ClientMiddleware(BaseMiddleware):
         client = await service.get(tg_id=user.id)
 
         logger.info(f'actual_{client=}')
-        data['client_data'] = client if client else None
+        data['client_data'] = (
+            client if isinstance(client, ClientReprSchema) else None
+        )
         return await handler(event, data)
 
 
@@ -108,6 +111,7 @@ class NotClientMiddleware(BaseMiddleware):
             bot = data['bots'][0]
             await set_client_menu(
                 bot, user.id, terminology_lang.menu_start)
+            logger.info(terminology_lang.menu_start)
 
         # Нужно перепродумать после тестов.
         current_state = await data['state'].get_state()

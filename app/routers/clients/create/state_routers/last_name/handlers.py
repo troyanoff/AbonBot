@@ -1,59 +1,28 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram import Router
 
 from core.config import settings as st
-from keyboards.inline.base import create_simply_inline_kb
-from routers.clients.create.state import FSMClientCreate
-from .terminology import terminology, Lang
+from routers.clients.create.state import states_group
+from filters.general import TextAlphaFilter
+from handlers.create.base import CreateConfig, CreateFieldMsg
+from .terminology import terminology
 
 
 logger = logging.getLogger(__name__)
 
 router = Router()
-router_state = FSMClientCreate.last_name
+router_state = states_group.last_name
 
-
-@router.message(
-    StateFilter(router_state),
-    F.text.isalpha()
+config = CreateConfig(
+    logger=logger,
+    router=router,
+    states_group=states_group,
+    router_state=router_state,
+    term=terminology,
+    field_filter=TextAlphaFilter(st.long_field_len)
 )
-async def done(
-    message: Message, state: FSMContext, lang: str
-):
-    state_handler = f'{router_state.state}:done'
-    logger.info(state_handler)
 
-    await state.update_data(last_name=message.text)
-
-    if await st.is_debag():
-        data = await state.get_data()
-        logger.info(f'{state_handler} {data=}')
-
-    terminology_lang: Lang = getattr(terminology, lang)
-    keyboard = await create_simply_inline_kb(
-        terminology_lang.buttons.__dict__,
-        2
-    )
-    await message.answer(
-        text=terminology_lang.terms.done,
-        reply_markup=keyboard
-    )
-    await state.set_state(FSMClientCreate.gender)
-
-
-@router.message(
-    StateFilter(router_state)
+handler = CreateFieldMsg(
+    config=config
 )
-async def error(
-    message: Message, lang: str
-):
-    state_handler = f'{router_state.state}:error'
-    logger.info(state_handler)
-    terminology_lang: Lang = getattr(terminology, lang)
-    await message.answer(
-        text=terminology_lang.terms.error
-    )
