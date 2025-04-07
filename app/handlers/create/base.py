@@ -26,7 +26,7 @@ class CreateConfig:
     field_filter: BaseFilter
     callbacks: dict = field(default_factory=lambda: {})
     back_button: str = None
-    miss_button: str = ''
+    miss_button: str = None
 
 
 class CreateField(BaseHandler):
@@ -61,7 +61,7 @@ class CreateField(BaseHandler):
 
     async def choise_message_method(self, data: Data, msg: Message):
         if isinstance(data.request.update, CallbackQuery):
-            return msg.edit_text
+            return msg.answer
         else:
             return msg.answer
 
@@ -101,7 +101,7 @@ class CreateField(BaseHandler):
     async def __call__(
         self, request_tg: RequestTG
     ):
-        data: Data = self._update_to_request_data(request_tg)
+        data: Data = self._update_to_request_data('call', request_tg)
         keyboard = await self._create_keyboard(data)
         text = data.term.local.terms.call
         await self.answer(data, text, keyboard)
@@ -206,6 +206,10 @@ class CreateFieldClb(CreateField):
                 F.data == self.config.back_button
             )(self.to_last_state)
 
+        self.config.router.message(
+            StateFilter(self.config.router_state)
+        )(self.error)
+
     async def callback_caller(
         self,
         callback: CallbackQuery,
@@ -218,3 +222,13 @@ class CreateFieldClb(CreateField):
         )
         await self.update_data(data, result)
         await self.handler.next_state(data.request)
+
+    async def error(
+        self, message: Message, lang: str, state: FSMContext
+    ):
+        data: Data = self._get_request_data(
+            'error', message, lang, state
+        )
+        keyboard = await self._create_keyboard(data)
+        text = data.term.local.terms.error
+        await self.answer(data, text, keyboard)

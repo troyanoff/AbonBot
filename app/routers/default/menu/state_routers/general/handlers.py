@@ -4,9 +4,11 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from importlib import import_module
 
 from core.terminology import terminology as core_term, Lang as core_Lang
 from keyboards.inline.base import create_simply_inline_kb
+from handlers.base import RequestTG
 from schemas.representations import ClientReprSchema
 from routers.default.state import FSMDefault
 from routers.companies.representation.state import FSMCompanyRepr
@@ -73,31 +75,10 @@ async def profile(
 ):
     state_handler = 'general:profile'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
+    await state.update_data(client_uuid=client_data.uuid)
 
-    await state.set_state(FSMDefault.default)
-
-    terminology_lang: Lang = getattr(terminology, lang)
-    core_term_lang: core_Lang = getattr(core_term, lang)
-    keyboard = await create_simply_inline_kb(
-        buttons=terminology_lang.buttons.__dict__,
-        width=1
-    )
-    sex = getattr(core_term_lang.terms, client_data.sex.name)
-    text = terminology_lang.terms.profile.format(
-        first_name=client_data.first_name,
-        last_name=client_data.last_name,
-        sex=sex,
-        companies_count=0,  # to do
-        subs_count=0  # to do
-    )
-    if not client_data.photo_id:
-        await message.answer(
-            text=text,
-            reply_markup=keyboard
-        )
-        return
-    await message.answer_photo(
-        photo=client_data.photo_id,
-        caption=text,
-        reply_markup=keyboard
-    )
+    path = 'routers.clients.profile.state_routers.default.handlers.handler'
+    module_path, caller = path.rsplit('.', 1)
+    module = import_module(module_path)
+    request_tg = RequestTG(update=message, lang=lang, state=state)
+    await getattr(module, caller)(request_tg)

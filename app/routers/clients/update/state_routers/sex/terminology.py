@@ -3,14 +3,17 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    manage_content: str = (
-        '<b>Ваш профиль</b>'
+    call: str = (
+        'Выберете ваш пол.'
         '\n\n'
-        'Имя: {first_name}\n'
-        'Фимилия: {last_name}'
-        '\nПол: {sex}'
-        # '\nКол-во компаний: {companies_count}'
-        # '\nКол-во подписок: {subs_count}'
+        'Это поможет нам верно отфильтровать доступные '
+        'для Вас тренировки.'
+    )
+    error: str = (
+        'Нужно выбрать пол из предложенных вариантов.'
+        '\n\n'
+        'Это поможет нам верно отфильтровать доступные '
+        'для Вас тренировки.'
     )
 
 
@@ -21,8 +24,8 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    update_profile: str = 'Изменить профиль'
-    create_company: str = 'Создать новую компанию'
+    m: str = 'Мужской'
+    f: str = 'Женский'
 
 
 @dataclass

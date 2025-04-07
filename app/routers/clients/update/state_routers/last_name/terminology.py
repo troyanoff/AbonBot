@@ -3,11 +3,11 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    done: str = (
-        'Выберете ваш пол.'
+    call: str = (
+        'Введите вашу фамилию.'
         '\n\n'
-        'Это поможет нам верно отфильтровать доступные '
-        'для Вас тренировки.'
+        'Оно должно быть правдивым, чтобы вашим '
+        'тренерам было понятно, что именно Вы придете на тренировку.'
     )
     error: str = (
         'Фамилия должна состоять только из букв, попробуйте еще раз.'
@@ -18,31 +18,18 @@ class TermCategoryRU:
 
 
 @dataclass
-class TermCategoryEN:
-    done: str = (
-        'Выберете ваш пол.'
-        '\n\n'
-        'Это поможет нам верно отфильтровать доступные '
-        'для Вас тренировки.'
-    )
-    error: str = (
-        'Фамилия должна состоять только из букв, попробуйте еще раз.'
-        '\n\n'
-        'Фамилия должна быть правдивой, чтобы вашим тренерам '
-        'было понятно, что именно Вы придете на тренировку.'
-    )
+class TermCategoryEN(TermCategoryRU):
+    pass
 
 
 @dataclass
 class ButtonCategoryRU:
-    gender_m: str = 'Мужской'
-    gender_f: str = 'Женский'
+    pass
 
 
 @dataclass
-class ButtonCategoryEN:
-    gender_m: str = 'Мужской'
-    gender_f: str = 'Женский'
+class ButtonCategoryEN(ButtonCategoryRU):
+    pass
 
 
 @dataclass

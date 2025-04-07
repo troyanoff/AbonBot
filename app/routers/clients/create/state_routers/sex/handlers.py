@@ -5,7 +5,6 @@ from aiogram import Router
 from routers.clients.create.state import states_group
 from filters.general import CallbackFilter
 from handlers.create.base import CreateConfig, CreateFieldClb
-from schemas.base import SexEnum
 from .terminology import terminology
 
 

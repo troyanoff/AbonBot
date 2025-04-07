@@ -55,5 +55,8 @@ class Settings(BaseSettings):
     async def is_debag(self):
         return self.debag.lower() == 'true'
 
+    async def get_bot_id(self) -> int:
+        return int(self.bot_token.split(':')[0])
+
 
 settings = Settings()

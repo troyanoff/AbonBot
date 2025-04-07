@@ -14,6 +14,7 @@ from logging import Logger
 from pydantic import BaseModel
 from types import CoroutineType
 
+from core.config import settings as st
 from core.terminology import terminology as core_term, Lang as core_Lang
 from schemas.base import MyBaseModel
 from schemas.utils import DoneSchema, FailSchema
@@ -121,7 +122,13 @@ class BaseHandler(ABC):
         term = Term(core=core_term_lang, local=terminology_lang)
         return Data(request=request, term=term)
 
-    def _update_to_request_data(self, request_tg: RequestTG) -> Data:
+    def _update_to_request_data(
+        self,
+        handler_name: str,
+        request_tg: RequestTG
+    ) -> Data:
+        state_handler = f'{self.config.router_state.state}:{handler_name}'
+        self.config.logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
         terminology_lang: LangBase = getattr(self.config.term, request_tg.lang)
         core_term_lang: core_Lang = getattr(core_term, request_tg.lang)
         term = Term(core=core_term_lang, local=terminology_lang)
@@ -152,7 +159,7 @@ class BaseHandler(ABC):
         buttons = data.term.local.buttons.__dict__
 
         back_reason = await self.back_state_group_exist(data)
-        if back_reason:
+        if back_reason and self.config.back_button:
             core_buttons = await data.term.core.buttons.get_dict_with(
                 self.config.back_button)
             buttons.update(core_buttons)
@@ -188,6 +195,9 @@ class BaseHandler(ABC):
         return getattr(module, caller)
 
     async def next_state_group(self, data: Data):
+        now_state = await data.request.state.get_state()
+        if now_state == self.config.router_state:
+            return
         await data.request.state.set_state(self.config.router_state)
         last_message_json = await self.get_state_key(data, 'last_message')
         if not last_message_json:
@@ -209,16 +219,16 @@ class BaseHandler(ABC):
         await data.request.state.set_data(last_message.state_instance)
         return last_message
 
-    async def last_message_remember(
-        self, data: Data, last_message: LastMessage
-    ):
-        now_state = await data.request.state.get_state()
-        if now_state != last_message.state:
-            await data.request.state.set_state(last_message.state)
-        await data.request.state.update_data(last_message=last_message)
-
     async def answer(self, data: Data, last_message: LastMessage):
         msg = await self.choise_message(data)
+
+        if msg.from_user.id != await st.get_bot_id():
+            await msg.answer_photo(
+                photo=last_message.photo,
+                caption=last_message.text,
+                reply_markup=last_message.keyboard
+            )
+            return
 
         if msg.photo:
             await msg.edit_media(
@@ -235,7 +245,22 @@ class BaseHandler(ABC):
                 reply_markup=last_message.keyboard
             )
 
+    async def equals_messages(self, old: LastMessage, new: LastMessage):
+        return all(
+            old.state == new.state,
+            old.text == new.text,
+            old.photo == new.photo,
+            old.keyboard == new.keyboard
+        )
+
     async def remember_answer(self, data: Data, last_message: LastMessage):
+        now_last_message = await self.get_state_key(data, 'last_message')
+        if now_last_message:
+            now_last_message_model = LastMessage.model_validate_json(
+                now_last_message
+            )
+            if self.equals_messages(now_last_message_model, last_message):
+                return
         await data.request.state.update_data(
             last_message=last_message.model_dump_json())
 
@@ -302,8 +327,4 @@ class BaseHandler(ABC):
             'callback_caller', callback, lang, state
         )
         caller = await self.choise_caller(self.config.callbacks[callback.data])
-        await caller(
-            update=data.request.update,
-            state=data.request.state,
-            lang=data.request.lang
-        )
+        await caller(data.request)

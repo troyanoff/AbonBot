@@ -20,7 +20,7 @@ config = CreateConfig(
     states_group=states_group,
     router_state=router_state,
     term=terminology,
-    field_filter=TextAlphaFilter(st.long_field_len)
+    field_filter=TextAlphaFilter(st.short_field_len)
 )
 
 handler = CreateFieldMsg(

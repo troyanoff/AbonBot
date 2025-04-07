@@ -50,7 +50,7 @@ class BaseService:
             logger.error(
                 f'Error: {pformat(response.model_dump())}')
             return FailSchema()
-        return DoneSchema()
+        return response
 
     async def get(self, **kwargs) -> BaseModel:
         result = await self.api.get(

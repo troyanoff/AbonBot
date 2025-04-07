@@ -35,13 +35,10 @@ class TextAlphaFilter(BaseFilter):
         self.max_lenght = max_lenght
 
     async def __call__(self, message: Message) -> bool:
-        print('++' * 1000)
         result = message.text.isalpha()
-        print(result)
         if not result:
             return False
         result = len(message.text) > self.max_lenght
-        print(result)
         if result:
             return False
         return {'result': message.text}

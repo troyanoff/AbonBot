@@ -1,12 +1,9 @@
-from aiogram.fsm.context import FSMContext
-from aiogram.types import (
-    CallbackQuery, Message
-)
+
 from aiogram.utils.keyboard import InlineKeyboardMarkup
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 
-from handlers.base import LastMessage, BaseConfig, BaseHandler, Data
+from handlers.base import LastMessage, BaseConfig, BaseHandler, Data, RequestTG
 from services.base import BaseService
 
 
@@ -44,12 +41,10 @@ class ManageBase(BaseHandler):
 
     async def __call__(
         self,
-        update: CallbackQuery | Message,
-        lang: str,
-        state: FSMContext
+        request_tg: RequestTG
     ):
-        data: Data = self._get_request_data(
-            'to_last_state', update, lang, state
+        data: Data = self._update_to_request_data(
+            'call', request_tg
         )
         await self.next_state_group(data)
 

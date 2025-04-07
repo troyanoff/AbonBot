@@ -22,7 +22,7 @@ config = ManageConfig(
     service_caller=get_client_service,
     term=terminology,
     callbacks={
-        'update_profile': 'routers.locations.representation.default_handler',
+        'update_profile': 'routers.clients.update.handler',
         'create_company': 'routers.actions.representation.default_handler',
     },
     format_caption={

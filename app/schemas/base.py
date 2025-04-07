@@ -70,3 +70,8 @@ class CreateFieldEnum(str, Enum):
     start = 'start'
     default = 'default'
     end = 'end'
+
+
+class RememberTypeEnum(str, Enum):
+    create = 'create'
+    update = 'update'
