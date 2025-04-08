@@ -14,7 +14,7 @@ class EmailFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         try:
             validate_email(message.text)
-            return True
+            return {'result': message.text}
         except EmailNotValidError:
             return False
 
@@ -25,7 +25,7 @@ class TextFilter(BaseFilter):
 
     async def __call__(self, message: Message) -> bool:
         result = len(message.text) > self.max_lenght
-        if not result:
+        if result:
             return result
         return {'result': message.text}
 

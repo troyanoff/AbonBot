@@ -80,6 +80,7 @@ class BaseConfig:
         'company_uuid': 'company_uuid'
     })
     callbacks: dict = field(default_factory=lambda: {})
+    callbacks_validate: dict = field(default_factory=lambda: {})
     stug_photo_name: str = 'default'
     back_button: str = None
 
@@ -247,10 +248,10 @@ class BaseHandler(ABC):
 
     async def equals_messages(self, old: LastMessage, new: LastMessage):
         return all(
-            old.state == new.state,
-            old.text == new.text,
-            old.photo == new.photo,
-            old.keyboard == new.keyboard
+            (old.state == new.state,
+             old.text == new.text,
+             old.photo == new.photo,
+             old.keyboard == new.keyboard)
         )
 
     async def remember_answer(self, data: Data, last_message: LastMessage):
@@ -259,7 +260,9 @@ class BaseHandler(ABC):
             now_last_message_model = LastMessage.model_validate_json(
                 now_last_message
             )
-            if self.equals_messages(now_last_message_model, last_message):
+            equals = await self.equals_messages(
+                now_last_message_model, last_message)
+            if equals:
                 return
         await data.request.state.update_data(
             last_message=last_message.model_dump_json())
@@ -326,5 +329,16 @@ class BaseHandler(ABC):
         data: Data = self._get_request_data(
             'callback_caller', callback, lang, state
         )
+        if callback.data in self.config.callbacks_validate:
+            check_valid_callback, phrase = self.config.callbacks_validate[
+                callback.data]
+            valid = await check_valid_callback(data)
+            if not valid:
+                await callback.answer(
+                    getattr(data.term.local.terms, phrase),
+                    show_alert=True
+                )
+                return
+        await callback.answer()
         caller = await self.choise_caller(self.config.callbacks[callback.data])
         await caller(data.request)

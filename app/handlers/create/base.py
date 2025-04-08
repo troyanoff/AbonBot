@@ -65,7 +65,7 @@ class CreateField(BaseHandler):
         else:
             return msg.answer
 
-    async def answer(
+    async def answer_without_media(
         self, data: Data, text: str, keyboard: InlineKeyboardMarkup | None
     ):
         msg = await self.choise_message(data)
@@ -104,7 +104,7 @@ class CreateField(BaseHandler):
         data: Data = self._update_to_request_data('call', request_tg)
         keyboard = await self._create_keyboard(data)
         text = data.term.local.terms.call
-        await self.answer(data, text, keyboard)
+        await self.answer_without_media(data, text, keyboard)
 
     async def miss(
         self,
@@ -176,7 +176,7 @@ class CreateFieldMsg(CreateField):
         )
         keyboard = await self._create_keyboard(data)
         text = data.term.local.terms.error
-        await self.answer(data, text, keyboard)
+        await self.answer_without_media(data, text, keyboard)
 
 
 class CreateFieldClb(CreateField):
@@ -231,4 +231,4 @@ class CreateFieldClb(CreateField):
         )
         keyboard = await self._create_keyboard(data)
         text = data.term.local.terms.error
-        await self.answer(data, text, keyboard)
+        await self.answer_without_media(data, text, keyboard)

@@ -86,6 +86,16 @@ class Remember:
         await request_tg.state.update_data(now_index=new_index)
         await request_tg.state.set_state(
             self.config.queue[new_index].config.router_state)
+
+        last_message_json = await self.get_state_key(
+            request_tg, 'last_message')
+        if not last_message_json:
+            await request_tg.state.update_data(state_path=[])
+            return
+        state_path: list = await self.get_state_key(request_tg, 'state_path')
+        state_path.append(last_message_json)
+        await request_tg.state.update_data(state_path=state_path)
+
         await self.config.queue[new_index](request_tg=request_tg)
 
     async def create_start_fields(self, request_tg: RequestTG):

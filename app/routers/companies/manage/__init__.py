@@ -1,7 +1,7 @@
 from aiogram import Router
 
 from .state_routers.default.handlers import (
-    router as default_router, handler as default_handler
+    router as default_router, handler
 )
 
 

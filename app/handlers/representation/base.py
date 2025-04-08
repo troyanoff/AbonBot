@@ -243,11 +243,7 @@ class ReprBase(BaseHandler):
     ):
         await self.update_for_next_state(data, item=item)
         caller = await self.choise_caller(self.config.next_state_caller)
-        await caller(
-            update=data.request.update,
-            lang=data.request.lang,
-            state=data.request.state
-        )
+        await caller(data.request)
 
     async def __call__(
         self,

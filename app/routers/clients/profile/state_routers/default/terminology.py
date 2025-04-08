@@ -12,6 +12,9 @@ class TermCategoryRU:
         # '\nКол-во компаний: {companies_count}'
         # '\nКол-во подписок: {subs_count}'
     )
+    forbitten: str = (
+        'На данный момент вы не можете создавать больше одной компании'
+    )
 
 
 @dataclass

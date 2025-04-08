@@ -5,6 +5,7 @@ from .state_routers.description.handlers import router as des_router
 from .state_routers.email.handlers import router as email_router
 from .state_routers.photo.handlers import router as photo_router
 from .state_routers.max_hour_cancel.handlers import router as hour_router
+from .queue import handler
 
 
 router = Router()

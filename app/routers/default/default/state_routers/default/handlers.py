@@ -15,7 +15,6 @@ from schemas.representations import ClientReprSchema, CompanyListSchema
 from schemas.utils import FailSchema
 from routers.clients.update.state import FSMClientUpdate
 from routers.default.state import FSMDefault, FSMStart
-from routers.companies.create.state_routers.name.handlers import start_create
 from .terminology import terminology, Lang
 
 
@@ -51,76 +50,6 @@ async def start(
 
     await message.answer(
         text=terminology_lang.terms.start
-    )
-
-
-@router.callback_query(
-    StateFilter(router_state),
-    F.data == 'update_profile'
-)
-async def update_profile(
-    callback: CallbackQuery,
-    state: FSMContext,
-    lang: str
-):
-    state_handler = f'{router_state.state}:update_profile'
-    logger.info(state_handler)
-
-    terminology_lang: Lang = getattr(terminology, lang)
-    core_term_lang: core_Lang = getattr(core_term, lang)
-
-    buttons = await core_term_lang.buttons.get_dict_with(
-        *FSMClientUpdate.core_buttons)
-    keyboard = await create_simply_inline_kb(
-        buttons,
-        1
-    )
-
-    await callback.message.answer(
-        text=terminology_lang.terms.update_profile,
-        reply_markup=keyboard
-    )
-    await state.set_state(FSMClientUpdate.first_name)
-
-
-@router.callback_query(
-    StateFilter(router_state),
-    F.data == 'create_company'
-)
-async def create_company(
-    callback: CallbackQuery,
-    state: FSMContext,
-    lang: str,
-    client_data: ClientReprSchema
-):
-    state_handler = f'{router_state.state}:create_company'
-    logger.info(state_handler)
-
-    service = get_company_service()
-    companies: CompanyListSchema = await service.get_list(
-        client_data.uuid)
-
-    if await st.is_debag():
-        logger.info(f'{companies=}')
-
-    core_term_lang: core_Lang = getattr(core_term, lang)
-    if isinstance(companies, FailSchema):
-        await callback.message.answer(
-            text=core_term_lang.terms.error
-        )
-        return
-
-    if companies.total_count > 0 and not client_data.is_premium:
-        terminology_lang: Lang = getattr(terminology, lang)
-        await callback.answer(
-            text=terminology_lang.terms.max_companies,
-            show_alert=True
-        )
-        return
-
-    return await start_create(
-        message=callback.message, state=state,
-        lang=lang, client_data=client_data
     )
 
 
