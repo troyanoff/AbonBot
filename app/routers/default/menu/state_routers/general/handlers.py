@@ -32,9 +32,14 @@ async def companies_command(
     state_handler = 'general:companies'
     logger.info(f'\n{'=' * 80}\n{state_handler}\n{'=' * 80}')
 
-    await state.set_data({'client_uuid': client_data.uuid})
-    await handler(
-        update=message, state=state, lang=lang)
+    await state.set_data(
+        {
+            'client_uuid': client_data.uuid,
+            'state_path': []
+        }
+    )
+    request_tg = RequestTG(update=message, lang=lang, state=state)
+    await handler(request_tg)
 
 
 @router.message(Command(commands='learn'))

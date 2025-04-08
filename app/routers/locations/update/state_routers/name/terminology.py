@@ -5,15 +5,10 @@ from core.config import settings as st
 
 @dataclass
 class TermCategoryRU:
-    start_create: str = (
+    call: str = (
         'Введите название локации ✏️'
         '\n\n'
         f'Оно не должно быть длиннее {st.short_field_len} символов ❗️'
-    )
-    done: str = (
-        'Введите описание для новой локации ✏️'
-        '\n\n'
-        f'Оно не должно быть длиннее {st.long_field_len} символов ❗️'
     )
     error: str = (
         'Видимо вы ввели некорректное название локации, попробуйте еще раз ✏️'

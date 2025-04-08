@@ -2,15 +2,9 @@ import logging
 
 from functools import lru_cache
 
-from core.config import settings as st
-from services.api import APIService, get_api_service
+from services.api import get_api_service
 from services.base import BaseService
-from services.cache import Cache, get_cache_service
-from schemas.instructors import (
-    InstructorCreateSchema, InstructorUpdateSchema
-)
 from schemas.representations import (
-    ClientReprSchema,
     InstructorReprSchema,
     InstructorListSchema,
 )
@@ -24,99 +18,8 @@ logger = logging.getLogger(__name__)
 class InstructorService(BaseService):
     base_path: str = 'instructors/'
     cache_prefix: str = 'instructors'
-
-    def __init__(self, api: APIService, cache: Cache):
-        self.api = api
-        self.cache = cache
-
-    async def _conversion(self, item: dict) -> InstructorReprSchema:
-        result = InstructorReprSchema(**item)
-        return result
-
-    async def list_conversion(self, items: dict) -> InstructorListSchema:
-        result = InstructorListSchema(**items)
-        return result
-
-    async def create(self, instructor: InstructorCreateSchema):
-        data = instructor.model_dump_json()
-        response = await self.api.post(
-            path=self.base_path, data=data
-        )
-        logger.info(f'instructor create {response=}')
-        if isinstance(response, (FailSchema, ExceptSchema)):
-            return FailSchema()
-        return response
-
-    async def update(self, data: InstructorUpdateSchema):
-        json_data = data.model_dump_json(exclude_unset=True)
-        response = await self.api.patch(
-            path=self.base_path, data=json_data
-        )
-        if isinstance(response, (FailSchema, ExceptSchema)):
-            logger.error(
-                f'Error: {pformat(response.model_dump())}')
-            return FailSchema()
-        await self.cache.delete(self.cache_prefix, data.uuid)
-        return response
-
-    async def get(self, uuid: str = None, **kwargs) -> ClientReprSchema:
-        data = await self.cache.get(self.cache_prefix, uuid)
-        if not data:
-            params = {}
-            if uuid:
-                params['uuid'] = uuid
-            params.update(kwargs)
-            result = await self.api.get(
-                path=self.base_path + 'get',
-                params=params
-            )
-            if isinstance(result, (FailSchema, ExceptSchema)):
-                if isinstance(result, FailSchema):
-                    return result
-                logger.error(
-                    f'Возникла ошибка: {pformat(result.model_dump())}')
-                return FailSchema()
-            data = result.response.data
-            logger.info('Set data to cache')
-            await self.cache.set(self.cache_prefix, uuid, data)
-        item = await self._conversion(data)
-        return item
-
-    async def get_list(
-        self,
-        company_uuid: str = None,
-        limit: int = st.default_limit_keyboard_page,
-        offset: int = 0,
-        **kwargs
-    ) -> InstructorListSchema:
-        data = await self.cache.get(
-            self.cache_prefix, f'{company_uuid=}:{limit=}:{offset=}:{kwargs=}'
-        )
-        if not data:
-            params = {
-                'limit': limit,
-                'offset': offset
-            }
-            if company_uuid:
-                params['company_uuid'] = company_uuid
-            params.update(kwargs)
-            result = await self.api.get(
-                path=self.base_path,
-                params=params
-            )
-            if isinstance(result, (FailSchema, ExceptSchema)):
-                logger.error(
-                    f'Error: {pformat(result.model_dump())}')
-                return FailSchema()
-            data = result.response.data
-            logger.info('Set data to cache')
-            await self.cache.set(
-                self.cache_prefix,
-                f'{company_uuid=}:{limit=}:{offset=}:{kwargs=}',
-                data
-            )
-        items = await self.list_conversion(data)
-        return items
+    item_schema = InstructorReprSchema
+    list_schema = InstructorListSchema
 
     async def archive(self, uuid: str):
         params = {
@@ -136,5 +39,4 @@ class InstructorService(BaseService):
 @lru_cache()
 def get_instructor_service() -> InstructorService:
     api = get_api_service()
-    cache = get_cache_service()
-    return InstructorService(api, cache)
+    return InstructorService(api)

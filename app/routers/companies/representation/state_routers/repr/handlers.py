@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 router_state = states_group.repr
 next_state_caller = (
-    'routers.companies.manage.state_routers.default.handlers.handler'
+    'routers.companies.manage.handler'
 )
 
 config = ReprConfig(

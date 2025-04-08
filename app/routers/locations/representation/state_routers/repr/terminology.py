@@ -13,6 +13,9 @@ class TermCategoryRU(CategoryBase):
     list_items: str = (
         'Список локаций компании {company_name}'
     )
+    forbitten: str = (
+        'В данный момент вы не можете создавать больше одной локации'
+    )
 
 
 @dataclass

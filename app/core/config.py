@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     default_cache_ttl: int = 5
     default_limit_keyboard_page: int = 5
 
-    access_token_ttl: int = 3600
-    refresh_token_ttl: int = 864000
+    access_token_ttl: int = 3590
+    refresh_token_ttl: int = 863990
 
     callback_ttl: int = 300
     callback_sep: str = ':'

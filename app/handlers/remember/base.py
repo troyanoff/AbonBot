@@ -17,7 +17,6 @@ class RememberConfig:
     remember_type: RememberTypeEnum
     item_prefix: str
     service_caller: BaseService
-    generated_field: str
     schema: BaseModel
     queue: list[CreateField]
     manage_caller: str | CoroutineType
@@ -32,8 +31,12 @@ class Remember:
 
     def __init__(self, config: RememberConfig):
         self.config = config
-        self.del_after = (self.index_name, self.config.generated_field)
+        self.generated_field = self.create_gf_name()
+        self.del_after = (self.index_name, self.generated_field)
         self._queue_notification()
+
+    def create_gf_name(self):
+        return f'{self.config.remember_type.name}_{self.config.item_prefix}'
 
     def _queue_notification(self):
         for elem in self.config.queue:
@@ -77,16 +80,7 @@ class Remember:
         state_data = await request_tg.state.get_data()
         return state_data.get(key)
 
-    async def next_state(self, request_tg: RequestTG):
-        now_index = await self.get_state_key(request_tg, self.index_name)
-        new_index = 0 if now_index is None else now_index + 1
-        if new_index == len(self.config.queue):
-            await self.end(request_tg)
-            return
-        await request_tg.state.update_data(now_index=new_index)
-        await request_tg.state.set_state(
-            self.config.queue[new_index].config.router_state)
-
+    async def remember_back_state(self, request_tg: RequestTG):
         last_message_json = await self.get_state_key(
             request_tg, 'last_message')
         if not last_message_json:
@@ -95,6 +89,17 @@ class Remember:
         state_path: list = await self.get_state_key(request_tg, 'state_path')
         state_path.append(last_message_json)
         await request_tg.state.update_data(state_path=state_path)
+
+    async def next_state(self, request_tg: RequestTG):
+        now_index = await self.get_state_key(request_tg, self.index_name)
+        new_index = 0 if now_index is None else now_index + 1
+        if new_index == len(self.config.queue):
+            await self.end(request_tg)
+            return
+        await request_tg.state.update_data(now_index=new_index)
+
+        await request_tg.state.set_state(
+            self.config.queue[new_index].config.router_state)
 
         await self.config.queue[new_index](request_tg=request_tg)
 
@@ -108,7 +113,7 @@ class Remember:
                 start_fields[key] = state_data[key_exist]
 
         await request_tg.state.update_data(
-            {self.config.generated_field: start_fields}
+            {self.generated_field: start_fields}
         )
 
     async def remove_remember_keys(self, request_tg: RequestTG):
@@ -119,11 +124,12 @@ class Remember:
 
     async def __call__(self, request_tg: RequestTG):
         await self.create_start_fields(request_tg)
+        await self.remember_back_state(request_tg)
         await self.next_state(request_tg)
 
     async def end(self, request_tg: RequestTG):
         state_data = await request_tg.state.get_data()
-        generated_data = state_data[self.config.generated_field]
+        generated_data = state_data[self.generated_field]
         generated_schema = self.config.schema.model_validate(generated_data)
 
         service: BaseService = self.config.service_caller()

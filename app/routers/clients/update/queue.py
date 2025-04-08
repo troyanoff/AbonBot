@@ -12,7 +12,6 @@ config = RememberConfig(
     remember_type=RememberTypeEnum.update,
     item_prefix='client',
     service_caller=get_client_service,
-    generated_field='update_client',
     schema=ClientUpdateSchema,
     queue=[fn_h, ln_h, sex_h, photo_h],
     manage_caller=(

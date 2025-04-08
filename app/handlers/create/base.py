@@ -45,19 +45,21 @@ class CreateField(BaseHandler):
         field_name = self.config.router_state.state.split(st.state_sep)[-1]
 
         state_data = await data.request.state.get_data()
-        data_field_dict: dict = state_data[self.handler.config.generated_field]
+        data_field_dict: dict = state_data[self.handler.generated_field]
         if isinstance(result, dict):
             data_field_dict.update(result)
         else:
             data_field_dict[field_name] = result
 
         await data.request.state.update_data(
-            {self.handler.config.generated_field: data_field_dict}
+            {self.handler.generated_field: data_field_dict}
         )
 
         if await st.is_debag():
             state_data = await data.request.state.get_data()
-            self.config.logger.info(f'\n{'=' * 80}\n{state_data}\n{'=' * 80}')
+            generated_data = state_data[self.handler.generated_field]
+            self.config.logger.info(
+                f'\n{'=' * 80}\n{generated_data}\n{'=' * 80}')
 
     async def choise_message_method(self, data: Data, msg: Message):
         if isinstance(data.request.update, CallbackQuery):

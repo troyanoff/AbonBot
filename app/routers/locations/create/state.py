@@ -5,14 +5,13 @@ class FSMLocationCreate(StatesGroup):
     name = State()
     description = State()
     photo = State()
-    photo_callbacks = ('photo_cancel', )
     city = State()
     street = State()
     house = State()
     flat = State()
     timezone = State()
-    core_buttons = ('cancel', )
-    data_field = 'new_location'
+    miss_button = 'miss_state'
+    cancel_button = 'cancel'
 
 
 states_group = FSMLocationCreate

@@ -2,7 +2,7 @@ from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
-    CallbackQuery, Message, InlineKeyboardMarkup,
+    CallbackQuery, InlineKeyboardMarkup,
     InlineKeyboardButton
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from core.config import settings as st
-from handlers.base import Data, BaseConfig, BaseHandler, LastMessage
+from handlers.base import Data, BaseConfig, BaseHandler, LastMessage, RequestTG
 from schemas.base import BaseReprListSchema
 from services.base import BaseService
 
@@ -247,13 +247,9 @@ class ReprBase(BaseHandler):
 
     async def __call__(
         self,
-        update: CallbackQuery | Message,
-        lang: str,
-        state: FSMContext
+        request_tg: RequestTG
     ):
-        data: Data = self._get_request_data(
-            'start', update, lang, state
-        )
+        data: Data = self._update_to_request_data('start', request_tg)
         await self.next_state_group(data)
 
         filters = await self._get_filter(data)

@@ -5,15 +5,10 @@ from core.config import settings as st
 
 @dataclass
 class TermCategoryRU:
-    start_update: str = (
+    call: str = (
         'Введите новое название компании ✏️'
         '\n\n'
         f'Оно не должно быть длиннее {st.short_field_len} символов ❗️'
-    )
-    done: str = (
-        'Введите новое описание для компании ✏️'
-        '\n\n'
-        f'Оно не должно быть длиннее {st.long_field_len} символов ❗️'
     )
     error: str = (
         'Видимо вы ввели некорректное название компании, попробуйте еще раз ✏️'

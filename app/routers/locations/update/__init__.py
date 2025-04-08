@@ -8,6 +8,7 @@ from .state_routers.street.handlers import router as street_router
 from .state_routers.house.handlers import router as house_router
 from .state_routers.flat.handlers import router as flat_router
 from .state_routers.timezone.handlers import router as timezone_router
+from .queue import handler
 
 
 router = Router()

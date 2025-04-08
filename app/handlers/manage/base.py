@@ -1,5 +1,6 @@
 
 from aiogram.utils.keyboard import InlineKeyboardMarkup
+from enum import Enum
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 
@@ -28,9 +29,19 @@ class ManageBase(BaseHandler):
         keyboard = await self.create_simply_kb(data)
         return keyboard
 
+    async def get_item_field(
+            self, data: Data, field_name: str, item: BaseModel):
+        field_value = getattr(item, field_name)
+        if isinstance(field_value, Enum):
+            core_value = getattr(data.term.core.terms, field_value.name, None)
+            if core_value:
+                field_value = core_value
+        return field_value
+
     async def _create_caption(self, data: Data, item: BaseModel):
         content = {
-            k: getattr(item, v) for k, v in self.config.format_caption.items()}
+            k: await self.get_item_field(data, v, item)
+            for k, v in self.config.format_caption.items()}
         result = data.term.local.terms.manage_content.format(**content)
         return result
 

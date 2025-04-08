@@ -28,7 +28,7 @@ config = ManageConfig(
         'cards': 'routers.cards.representation.default_handler',
         'subscriptions':
             'routers.subscriptions.representation.default_handler',
-        'update': 'routers.companies.update.start_handler',
+        'update': 'routers.companies.update.handler',
     },
     format_caption={
         'name': 'name',

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from core.config import settings as st
 from services.api import APIService
-from schemas.utils import DoneSchema, FailSchema, ExceptSchema
+from schemas.utils import FailSchema, ExceptSchema
 from pprint import pformat
 
 
