@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 
+from utils.terminology import CategoryBase
+
 
 @dataclass
-class TermCategoryRU:
-    manage: str = (
+class TermCategoryRU(CategoryBase):
+    manage_content: str = (
         '<b>{name}</b>'
         '\n\n'
         '{description}'
@@ -17,7 +19,7 @@ class TermCategoryEN(TermCategoryRU):
 
 
 @dataclass
-class ButtonCategoryRU:
+class ButtonCategoryRU(CategoryBase):
     archive: str = 'Архивировать тренировку'
     create: str = 'Новая тренировка'
 

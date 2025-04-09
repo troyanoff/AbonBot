@@ -5,8 +5,8 @@ class FSMActionCreate(StatesGroup):
     name = State()
     description = State()
     photo = State()
-    photo_callbacks = ('photo_cancel', )
-    core_buttons = ('cancel', )
+    miss_button = 'miss_state'
+    cancel_button = 'cancel'
 
 
 states_group = FSMActionCreate

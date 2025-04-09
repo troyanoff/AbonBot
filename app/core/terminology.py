@@ -41,6 +41,7 @@ class TermCategoryRU(CategoryBase):
     )
     m: str = 'Мужской'
     f: str = 'Женский'
+    archive: str = 'Успешная архивация'
 
 
 @dataclass

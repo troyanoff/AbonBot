@@ -22,12 +22,12 @@ config = ManageConfig(
     service_caller=get_company_service,
     term=terminology,
     callbacks={
-        'locations': 'routers.locations.representation.default_handler',
-        'actions': 'routers.actions.representation.default_handler',
-        'instructors': 'routers.instructors.representation.default_handler',
-        'cards': 'routers.cards.representation.default_handler',
+        'locations': 'routers.locations.representation.handler',
+        'actions': 'routers.actions.representation.handler',
+        'instructors': 'routers.instructors.representation.handler',
+        'cards': 'routers.cards.representation.handler',
         'subscriptions':
-            'routers.subscriptions.representation.default_handler',
+            'routers.subscriptions.representation.handler',
         'update': 'routers.companies.update.handler',
     },
     format_caption={

@@ -265,7 +265,12 @@ class BaseHandler(ABC, StateTraveler):
     ) -> CoroutineType:
         if isinstance(caller_entity, CoroutineType):
             return caller_entity
+
         module_path, caller = caller_entity.rsplit('.', 1)
+
+        if module_path == 'self':
+            return getattr(self, caller)
+
         module = import_module(module_path)
         return getattr(module, caller)
 
@@ -351,9 +356,9 @@ class BaseHandler(ABC, StateTraveler):
                     show_alert=True
                 )
                 return
-        await callback.answer()
         caller = await self.choise_caller(self.config.callbacks[callback.data])
         await caller(data.request)
+        await callback.answer()
 
     async def to_last_state(
         self,

@@ -80,3 +80,22 @@ class ManageBase(BaseHandler):
         )
         await self.remember_answer(data, last_message)
         await self.answer(data, last_message)
+
+    async def archive(
+        self,
+        request_tg: RequestTG
+    ):
+        data = self._update_to_request_data('archive', request_tg)
+        uuid = await self.get_state_key(
+            data, f'{self.config.item_prefix}_uuid')
+
+        service = self.config.service_caller()
+        result = await service.archive(uuid)
+        if await self.bad_response(data, result):
+            return
+        await data.request.update.answer(data.term.local.terms.archived)
+        await self.to_last_state(
+            callback=data.request.update,
+            lang=data.request.lang,
+            state=data.request.state
+        )
