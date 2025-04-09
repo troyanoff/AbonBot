@@ -27,7 +27,7 @@ config = ManageConfig(
         'instructors': 'routers.instructors.representation.handler',
         'cards': 'routers.cards.representation.handler',
         'subscriptions':
-            'routers.subscriptions.representation.handler',
+            'routers.subscriptions.representation_company.handler',
         'update': 'routers.companies.update.handler',
     },
     format_caption={

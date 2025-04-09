@@ -31,7 +31,7 @@ class ManageBase(BaseHandler):
 
     async def get_item_field(
             self, data: Data, field_name: str, item: BaseModel):
-        field_value = getattr(item, field_name)
+        field_value = await self._getattr_model(item, field_name)
         if isinstance(field_value, Enum):
             core_value = getattr(data.term.core.terms, field_value.name, None)
             if core_value:

@@ -1,10 +1,11 @@
-from time import time
 from aiogram.filters import BaseFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from email_validator import validate_email, EmailNotValidError
 
-from keyboards.inline.factories import CompanyFactory
-from core.config import settings
+from services.clients import get_client_service
+from services.subscriptions import get_subscription_service
+from schemas.representations import SubscriptionListSchema, ClientReprSchema
 
 
 class EmailFilter(BaseFilter):
@@ -59,6 +60,35 @@ class IntegerFilter(BaseFilter):
         if not result:
             return result
         return {'result': int_text}
+
+
+class SubTGIDFilter(BaseFilter):
+    def __init__(self) -> None:
+        pass
+
+    async def __call__(self, message: Message, state: FSMContext) -> bool:
+        try:
+            strip_msg = message.text.strip()
+            int_text = int(strip_msg)
+            result = 0 < int_text
+            if not result:
+                return False
+            client_service = get_client_service()
+            client: ClientReprSchema = await client_service.get(tg_id=int_text)
+            if not isinstance(client, ClientReprSchema):
+                return False
+            state_data = await state.get_data()
+            sub_service = get_subscription_service()
+            subs = await sub_service.get_list(
+                client_uuid=client.uuid,
+                company_uuid=state_data['company_uuid']
+            )
+            if not isinstance(subs, SubscriptionListSchema) \
+                    or subs.total_count > 0:
+                return False
+            return {'result': {'tg_id': int_text}}
+        except Exception:
+            return False
 
 
 class BoolFilter(BaseFilter):

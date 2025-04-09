@@ -251,6 +251,14 @@ class BaseHandler(ABC, StateTraveler):
     async def _choise_media(self, data: Data, item: BaseModel) -> str:
         pass
 
+    async def _getattr_model(self, item: BaseModel, name: str):
+        if '.' not in name:
+            return getattr(item, name)
+        result = item
+        for j in name.split('.'):
+            result = getattr(result, j)
+        return result
+
     async def get_state_key(self, data: Data, key: str):
         state_data = await data.request.state.get_data()
         return state_data.get(key)

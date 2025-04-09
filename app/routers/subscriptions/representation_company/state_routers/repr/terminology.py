@@ -20,7 +20,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    create: str = 'Добавить клиента'
+    pass
 
 
 @dataclass

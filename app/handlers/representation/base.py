@@ -199,7 +199,7 @@ class ReprBase(BaseHandler):
     async def repr_item_name(self, item: BaseModel) -> str:
         result = []
         for i in self.config.item_name:
-            result.append(getattr(item, i))
+            result.append(await self._getattr_model(item, i))
         return ' '.join(result)
 
     async def not_items(self, data: Data):

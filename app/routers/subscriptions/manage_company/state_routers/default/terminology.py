@@ -1,16 +1,11 @@
 from dataclasses import dataclass
 
+from utils.terminology import CategoryBase
+
 
 @dataclass
-class TermCategoryRU:
-    done: str = (
-        'Введите количество часов до начала таймслота, '
-        'когда уже нельзя будет отменить запись с возвращением потраченной '
-        'записи в абонемент'
-        '\n\n'
-        'Просто введите количество одним числом ✏️'
-    )
-    manage: str = (
+class TermCategoryRU(CategoryBase):
+    manage_content: str = (
         '<b>Подписчик</b>'
         '\n\n'
         'Имя: {first_name}\n'
@@ -25,9 +20,8 @@ class TermCategoryEN(TermCategoryRU):
 
 
 @dataclass
-class ButtonCategoryRU:
+class ButtonCategoryRU(CategoryBase):
     add_instructor: str = 'Назначить тренером'
-    create: str = 'Новый клиент'
 
 
 @dataclass

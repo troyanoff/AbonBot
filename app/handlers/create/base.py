@@ -234,3 +234,19 @@ class CreateFieldClb(CreateField):
         keyboard = await self._create_keyboard(data)
         text = data.term.local.terms.error
         await self.answer_without_media(data, text, keyboard)
+
+
+# class CreateTGIDFieldMsg(CreateFieldMsg):
+#     async def done(
+#         self,
+#         message: Message,
+#         state: FSMContext,
+#         lang: str,
+#         result: dict
+#     ):
+#         data: Data = self._get_request_data(
+#             'done', message, lang, state
+#         )
+
+#         await self.update_data(data, result)
+#         await self.handler.next_state(data.request)
