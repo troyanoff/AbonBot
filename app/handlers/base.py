@@ -85,7 +85,81 @@ class BaseConfig:
     back_button: str = None
 
 
-class BaseHandler(ABC):
+class StateTraveler:
+    def __init__(self, config: BaseConfig):
+        self.config = config
+
+    async def get_state_key(self, data: Data, key: str):
+        state_data = await data.request.state.get_data()
+        return state_data.get(key)
+
+    async def next_state_group(self, data: Data):
+        now_state = await data.request.state.get_state()
+        if now_state == self.config.router_state:
+            return
+        await data.request.state.set_state(self.config.router_state)
+
+        last_message_json = await self.get_state_key(data, 'last_message')
+        if not last_message_json:
+            await data.request.state.update_data(state_path=[])
+            return
+        state_path: list = await self.get_state_key(data, 'state_path')
+        state_path.append(last_message_json)
+        await data.request.state.update_data(state_path=state_path)
+
+    async def back_state_group_exist(self, data: Data):
+        state_path = await self.get_state_key(data, 'state_path')
+        return bool(state_path)
+
+    async def back_state_group(self, data: Data):
+        state_path: list = await self.get_state_key(data, 'state_path')
+        last_message = LastMessage.model_validate_json(state_path.pop())
+        await data.request.state.update_data(state_path=state_path)
+        await data.request.state.set_state(last_message.state)
+        await data.request.state.set_data(last_message.state_instance)
+        return last_message
+
+    async def equals_messages(self, old: LastMessage, new: LastMessage):
+        return all(
+            (old.state == new.state,
+             old.text == new.text,
+             old.photo == new.photo,
+             old.keyboard == new.keyboard)
+        )
+
+    async def remember_answer(
+        self,
+        data: Data,
+        last_message: LastMessage
+    ) -> LastMessage:
+        state_data = last_message.state_instance
+        if state_data.get('last_message'):
+            state_data['last_message'] = {}
+
+        now_last_message = await self.get_state_key(data, 'last_message')
+        if now_last_message:
+            now_last_message_model = LastMessage.model_validate_json(
+                now_last_message
+            )
+            equals = await self.equals_messages(
+                now_last_message_model, last_message)
+            if equals:
+                return
+        await data.request.state.update_data(
+            last_message=last_message.model_dump_json())
+
+        return last_message
+
+    async def replay_last_answer(self, data: Data):
+        reason = await self.back_state_group_exist(data)
+        if not reason:
+            return
+        last_message = await self.back_state_group(data)
+        await self.remember_answer(data, last_message)
+        return last_message
+
+
+class BaseHandler(ABC, StateTraveler):
     def __init__(self, config: BaseConfig):
         self.config = config
         self._register_handlers()
@@ -195,31 +269,6 @@ class BaseHandler(ABC):
         module = import_module(module_path)
         return getattr(module, caller)
 
-    async def next_state_group(self, data: Data):
-        now_state = await data.request.state.get_state()
-        if now_state == self.config.router_state:
-            return
-        await data.request.state.set_state(self.config.router_state)
-        last_message_json = await self.get_state_key(data, 'last_message')
-        if not last_message_json:
-            await data.request.state.update_data(state_path=[])
-            return
-        state_path: list = await self.get_state_key(data, 'state_path')
-        state_path.append(last_message_json)
-        await data.request.state.update_data(state_path=state_path)
-
-    async def back_state_group_exist(self, data: Data):
-        state_path = await self.get_state_key(data, 'state_path')
-        return bool(state_path)
-
-    async def back_state_group(self, data: Data):
-        state_path: list = await self.get_state_key(data, 'state_path')
-        last_message = LastMessage.model_validate_json(state_path.pop())
-        await data.request.state.update_data(state_path=state_path)
-        await data.request.state.set_state(last_message.state)
-        await data.request.state.set_data(last_message.state_instance)
-        return last_message
-
     async def answer(self, data: Data, last_message: LastMessage):
         msg = await self.choise_message(data)
 
@@ -245,27 +294,6 @@ class BaseHandler(ABC):
                 caption=last_message.text,
                 reply_markup=last_message.keyboard
             )
-
-    async def equals_messages(self, old: LastMessage, new: LastMessage):
-        return all(
-            (old.state == new.state,
-             old.text == new.text,
-             old.photo == new.photo,
-             old.keyboard == new.keyboard)
-        )
-
-    async def remember_answer(self, data: Data, last_message: LastMessage):
-        now_last_message = await self.get_state_key(data, 'last_message')
-        if now_last_message:
-            now_last_message_model = LastMessage.model_validate_json(
-                now_last_message
-            )
-            equals = await self.equals_messages(
-                now_last_message_model, last_message)
-            if equals:
-                return
-        await data.request.state.update_data(
-            last_message=last_message.model_dump_json())
 
     async def bad_response(
         self,
@@ -304,22 +332,6 @@ class BaseHandler(ABC):
     ):
         pass
 
-    async def to_last_state(
-        self,
-        callback: CallbackQuery,
-        lang: str,
-        state: FSMContext
-    ):
-        data: Data = self._get_request_data(
-            'to_last_state', callback, lang, state
-        )
-        reason = await self.back_state_group_exist(data)
-        if not reason:
-            return
-        last_message = await self.back_state_group(data)
-        await self.remember_answer(data, last_message)
-        await self.answer(data, last_message)
-
     async def callback_caller(
         self,
         callback: CallbackQuery,
@@ -342,3 +354,15 @@ class BaseHandler(ABC):
         await callback.answer()
         caller = await self.choise_caller(self.config.callbacks[callback.data])
         await caller(data.request)
+
+    async def to_last_state(
+        self,
+        callback: CallbackQuery,
+        lang: str,
+        state: FSMContext
+    ):
+        data: Data = self._get_request_data(
+            'to_last_state', callback, lang, state
+        )
+        last_message = await self.replay_last_answer(data)
+        await self.answer(data, last_message)

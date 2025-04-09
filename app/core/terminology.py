@@ -53,8 +53,8 @@ class ButtonCategoryRU(CategoryBase):
     cancel: str = 'Отмена'
     miss_state: str = 'Пропустить шаг'
     general: str = 'На главную'
-    back: str = '⬅️'
-    forward: str = '➡️'
+    back: str = '<<'
+    forward: str = '>>'
     back_state: str = 'Назад'
 
 
