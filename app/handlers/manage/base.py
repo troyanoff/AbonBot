@@ -11,6 +11,7 @@ from services.base import BaseService
 @dataclass
 class ManageConfig(BaseConfig):
     format_caption: dict = field(default_factory=lambda: {})
+    set_item_data: dict = field(default_factory=lambda: {})
 
 
 class ManageBase(BaseHandler):
@@ -50,6 +51,14 @@ class ManageBase(BaseHandler):
             return item.photo_id
         return getattr(data.term.core.photos, self.config.stug_photo_name)
 
+    async def set_item_data(self, data: Data, item: BaseModel):
+        if not self.config.set_item_data:
+            return
+        update_data = {}
+        for k, v in self.config.set_item_data.items():
+            update_data[k] = await self._getattr_model(item, v)
+        await data.request.state.update_data(update_data)
+
     async def __call__(
         self,
         request_tg: RequestTG
@@ -66,6 +75,8 @@ class ManageBase(BaseHandler):
         item = await service.get(uuid=uuid)
         if await self.bad_response(data, item):
             return
+
+        await self.set_item_data(data, item)
 
         text = await self._create_caption(data, item)
         photo = await self._choise_media(data, item)

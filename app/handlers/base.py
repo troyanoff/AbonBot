@@ -113,10 +113,14 @@ class StateTraveler:
 
     async def back_state_group(self, data: Data):
         state_path: list = await self.get_state_key(data, 'state_path')
+
         last_message = LastMessage.model_validate_json(state_path.pop())
-        await data.request.state.update_data(state_path=state_path)
+
+        last_state_instance = last_message.state_instance
+        last_state_instance.update({'state_path': state_path})
+
         await data.request.state.set_state(last_message.state)
-        await data.request.state.set_data(last_message.state_instance)
+        await data.request.state.set_data(last_state_instance)
         return last_message
 
     async def equals_messages(self, old: LastMessage, new: LastMessage):
@@ -135,6 +139,8 @@ class StateTraveler:
         state_data = last_message.state_instance
         if state_data.get('last_message'):
             state_data['last_message'] = {}
+        if state_data.get('state_path'):
+            state_data['state_path'] = []
 
         now_last_message = await self.get_state_key(data, 'last_message')
         if now_last_message:

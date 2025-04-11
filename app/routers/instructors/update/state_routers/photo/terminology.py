@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class TermCategoryRU:
-    start_create: str = (
+    call: str = (
         'Выберете новое фото для тренера 🖼'
         '\n\n'
         'Ваши клиенты смогут увидеть какие у Вас эффектные тренеры 😎'
@@ -23,7 +23,7 @@ class TermCategoryEN(TermCategoryRU):
 
 @dataclass
 class ButtonCategoryRU:
-    photo_cancel: str = 'Пока без фото'
+    pass
 
 
 @dataclass

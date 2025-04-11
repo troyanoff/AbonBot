@@ -30,7 +30,10 @@ config = ManageConfig(
         'last_name': 'client.last_name',
         'sex': 'client.sex'
     },
-    back_button=states_group.back_button
+    back_button=states_group.back_button,
+    set_item_data={
+        'sub_client_uuid': 'client.uuid'
+    }
 )
 
 handler = ManageBase(
